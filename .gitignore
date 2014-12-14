@@ -1,0 +1,9 @@
+*~
+from-camera/**
+*mod
+*pyc
+.metadata/
+*swp
+log/
+media/
+!derbysite/media/racers/default-image.png

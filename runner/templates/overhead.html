@@ -1,0 +1,514 @@
+{% load humanize %}
+<!doctype html>
+<html lang="us">
+<head>
+<meta charset="utf-8">
+<link href="/static/css/blitzer/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+<script src="/static/js/jquery-1.9.1.min.js"></script>
+<script src="/static/js/jquery-ui-1.10.3.custom.min.js"></script>
+
+<!-- http://os.alfajango.com/easytabs/ -->
+<script src="/static/js/jquery.ba-hashchange.js"></script>
+<script src="/static/js/jquery.easytabs.js"></script>
+
+<link href="/static/css/myderby.css" rel="stylesheet">
+<script src="/static/js/myderby.js"></script>
+
+<link rel="shortcut icon" href="/static/favicon.png" type="image/png">
+<link rel="icon" href="/static/favicon.png" type="image/png">
+<style>
+table.result-table {
+    border-collapse:collapse  !important;
+    border: 2px solid black !important;
+    width: 100%;
+    font-size:200%  !important;
+}
+table.result-table td, th {
+    border: 2px solid gray;
+    align: center;
+    padding: 5px;
+}
+.result-header {
+	width: 100%;
+	font-size:200%  !important
+}
+#tab-container {
+	width: 100% !important;
+	font-weight: bold;
+	opacity: 0.9;
+	background: transparent;
+	border: none;
+}
+
+.ui-dialog {
+	background: #fff000;
+}
+</style>
+<script>
+/* Status data returned:
+    {now: d/t,
+     race_id: id,
+     lane_ct: no,
+     current_run_id: id or 'n/a'
+     current_run_seq: id or 'n/a',
+     current_stamp: d/t or 'n/a',
+     runs:
+         [{run_id:id,
+           run_seq:seq,
+           run_completed:1|0, 
+           runplaces:
+              [{runplace_id:id, lane:no, rp.person_name, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
+               {runplace_id:id, lane:no, rp.person_name, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
+               . . .
+               {runplace_id:id, lane:no, rp.person_name, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt}]
+           }]
+    }*/
+var ROWCLASS = ["row1","row2"];
+var TABLE_HEADINGS_STANDINGS = "<tr class='standings-heading'><th width='5%'>Place</th><th width='30%'>Racer</th><th width='20%'>Name</th><th width='15%'>Rank</th><th width='10%'>Avg Time</th><th width='10%'>MPH</th><th width='20%'>Run count</th></tr>";
+var CYCLE_MS = 4000;
+var ANIMATE_MS = 400;
+var ws_refresh = null;
+var screenToggle = false;
+//var SCREEN_TOGGLE_MS = 6 * (CYCLE_MS + ANIMATE_MS) + 2 * ANIMATE_MS;
+var SCREEN_TOGGLE_MS = 6 * CYCLE_MS + ANIMATE_MS;
+var screenToggleValue = 0; /* flip btw 0 and 1 for now */
+var socketConnected = false;
+
+/*****************************************************************************
+ * BEGIN LastRaceResult 
+ *****************************************************************************/
+
+function sortByTime(a, b) {
+	var asec = a.seconds;
+	var bsec = b.seconds; 
+	return ((asec < bsec) ? -1 : ((asec > bsec) ? 1 : 0));
+}
+
+function showResultDialog() {
+	// $("#rundetail_dialog").toggle("pulsate"); slow on some devices
+	$("#rundetail_dialog").dialog("open");
+}
+
+function getResultHtml(data) {
+	/*console.log('getResultHtml data=', data);*/
+	var results = 'No run data?';
+	var lastRun = false;
+	if (null != data.current_run_seq && 1 < data.current_run_seq) {
+		run_ind = data.current_run_seq - 2;  /* -1 for prev run and -1 b/c index is zero-based */
+		if (data.current_run_seq == data.runs.length && data.runs[run_ind+1].run_completed == 1) {
+			console.log('Last run!');
+			lastRun = true;
+			run_ind += 1; // current cannot advance past the last Run
+		}
+		run = data.runs[run_ind];
+		run.runplaces.sort(sortByTime);
+		console.log('run=', run);
+		$("#rundetail_dialog").dialog("option", "title", "Run #" + run.run_seq.toString() + " - " + prettyDate(run.run_stamp));
+		if (lastRun) {
+			results = "<h1 class='center'>Race Complete!</h1>";
+		} else {
+			results = "";
+		}
+		results += "<table id='result-table' class='result-table'><tr class='standings-heading'><th class='center' width='10%'>Place</th><th width='25%'>Driver</th><th width='25%'>Racer</th><th class='center' width='10%'>Time</th><th class='center' width='15%'>Speed</th><th class='center' width='10%'>Lane</th></tr>";
+		var place = 1;
+		console.log('run.runplaces.length',run.runplaces.length);
+		var evenOddInd = 0;
+		for (i=0; i<run.runplaces.length;i++) {
+			var rp = run.runplaces[i];
+			evenOddInd = i % 2;
+			var row = "<tr class='"+ROWCLASS[evenOddInd]+"'><td class='ordinal center'>" + (i+1) + "</td><td>"+rp.person_name+"</td><td>"+rp.racer_name+"</td><td class='center'>"+rp.seconds+"</td>";
+			row += "<td class='center'>"+speed(rp.seconds)+"</td><td class='center'>"+rp.lane+"</td></tr>";
+			results += row;
+		}
+
+/*
+		{run_seq: 5, run_completed: true, runplaces: Array[6], run_stamp: "2014-01-12T14:59:14.689196", run_id: 5}
+		runplaces[0]:
+			dnf: false
+			lane: 1
+			racer_id: 5
+			racer_img: "/media/racers/default-image.png"
+			racer_name: null
+			runplace_id: 25
+			seconds: 3.296
+			stamp: "2014-01-12T14:59:14.689196"
+*/
+		results += "</table>";
+	}
+	return results;
+}
+
+function updateResults(data) {
+	/* Show last race result, top-dwon, in place order 
+	Add a call to this method in updateStatus, then we can hide/show dialog with the info */
+
+	var html = getResultHtml(data);
+	$('#rundetail_dialog').html(html);
+}
+
+/* Dialog code is farter below, near the end of this source. */
+
+function apply_ordinal() {
+	$(".ordinal").each(function () {
+		i = $(this).text();
+		if (parseInt(i) == i) {
+			var j = i % 10, str;
+			if (j == 1 && i != 11) {
+				str = i + "st";
+			} else if (j == 2 && i != 12) {
+				str = i + "nd";
+			} else if (j == 3 && i != 13) {
+				str = i + "rd";
+			} else {
+				str = i + "th";
+			}
+			$(this).text(str);
+		}
+	});
+}
+
+/*****************************************************************************
+ * END LastRaceResult 
+ *****************************************************************************/
+
+/* mode = 'standings' or 'status' 
+ * updateUi = function to update UI
+ */
+function refreshData(mode, updateUI, nocache) {
+	nocache = (typeof nocache === "undefined") ? false : nocache;
+	var url = "/runner/race/{{race_id}}/standings/data";
+	if (mode == 'status') {
+		url = "/runner/race/{{race_id}}/status/data";
+	}
+	if (nocache) {
+		url += 'nocache';
+	}
+
+	$.getJSON(url, function(data) {
+		console.log('Async getdata request to ', url);
+	}).done(function(data) {
+		updateUI(data);
+		/* 12/29: FYI data.now is only populated on status, not standings */
+		updateLastRefreshUI(data.now);
+		if (mode == 'status') {
+//			var pct = ((data['current_run_seq']-1) / data.runs.length) * 100; // OLD, not accurate after the last run
+			var completed = data.runs.filter(function(value) { return value.run_completed == true }).length;
+			var pct = (completed / data.runs.length) * 100;
+			updateStatusbar(Math.round(pct));
+		}
+		apply_ordinal();
+		console.log("refreshData completed at:", data.now);
+	}).fail(function() {
+		console.log("ERROR: refreshData error");
+	}).always(function() {
+	});
+}
+
+/*****************************************************************************
+ * BEGIN Status 
+ *****************************************************************************/
+function updateStatus() {
+//	console.log('Entered updateStatus');
+
+	$('div#status').find(".run-table").remove();
+
+	function fnUpdate(data) {
+		var htmlAllRuns = '';
+		for (i = 1; i <= data.runs.length; i++) {
+			htmlAllRuns += renderRun(data, i, reversed=false, detailed=true);
+		}
+		$('#run_all').find("tr").remove();
+		$('#run_all').append(htmlAllRuns);
+		$("button").button();
+		// do not scroll to current run here - interferes with results dialog display
+		updateResults(data); /* update last run display info */
+	}
+	refreshData('status', fnUpdate);
+//	console.log('Exiting updateStatus');
+}
+/*****************************************************************************
+ * END Status, BEGIN Standings 
+ *****************************************************************************/
+function getStandingsRow(r, seq, evenOddInd, uniq) {
+	var rankSlug = slugify(r.rank);
+	var rowhtml = "<tr class='place_row center " + ROWCLASS[evenOddInd] + " " + rankSlug + "'>";
+	rowhtml += "<td class='ordinal center'>"+seq+"</td>;"
+	rowhtml += "<td class='left'>#" + r.racer_id + " - " + r.racer_name + "</td>";
+	rowhtml += "<td class='left'>" + r.name_first + " " + r.name_last + "</td>";
+	rowhtml += "<td class='center'>" + r.rank + "</td>";
+	rowhtml += "<td class='center'>" + myToFixed(r.average) + "</td>";
+	rowhtml += "<td class='center'>" + speed(r.average) + "</td>";
+	rowhtml += "<td width='20%'><div id='progress-"+r.racer_id+uniq+"'><div class='progress-label' id='proglabel-"+r.racer_id+uniq+"'></div></div></td></tr>"; /* " + r.count + " of " + { { lane_ct } } + " */
+	return rowhtml;
+}
+
+function updateStandings() {
+	function updateUI(data) {
+		var placeCounts = [
+			['#tblStandingsAll', 	0, 'priorSecondsPlaceholder'],
+			['#tblStandingsTiger', 	0, 'priorSecondsPlaceholder'],
+			['#tblStandingsWolf', 	0, 'priorSecondsPlaceholder'],
+			['#tblStandingsBear', 	0, 'priorSecondsPlaceholder'],
+			['#tblStandingsWI', 	0, 'priorSecondsPlaceholder'],
+			['#tblStandingsWII', 	0, 'priorSecondsPlaceholder']
+		];
+		for (x = 0; x < placeCounts.length; x++) {
+			$(placeCounts[x][0]).find("tr.standings-heading").remove(); /* HACK: Should check for existence before appending, instead */
+			$(placeCounts[x][0]).append(TABLE_HEADINGS_STANDINGS);
+			$(placeCounts[x][0]).find("tr.place_row").remove();
+		}
+
+		var h = 30;
+		for (i = 0; i < data.length; i++) {
+			if (data[i].average != placeCounts[0][2]) placeCounts[0][1]++;
+			placeCounts[0][2] = data[i].average;
+			$("#tblStandingsAll").append(getStandingsRow(data[i], placeCounts[0][1], (i%2), 'all'));
+			var rankInd = 0; // Tiger=1, Wolf, Bear, WI, WII=5
+			if ("Tiger" == data[i].rank) rankInd = 1;
+			else if ("Wolf" == data[i].rank) rankInd = 2;
+			else if ("Bear" == data[i].rank) rankInd = 3;
+			else if ("WEBELOS I" == data[i].rank) rankInd = 4;
+			else if ("WEBELOS II" == data[i].rank) rankInd = 5;
+			if (data[i].average != placeCounts[rankInd][2]) placeCounts[rankInd][1]++;
+			placeCounts[rankInd][2] = data[i].average;
+			$(placeCounts[rankInd][0]).append(
+				getStandingsRow(
+					data[i],
+					placeCounts[rankInd][1],
+					placeCounts[rankInd][1] % 2, ''));
+			var pb = '#progress-' + data[i].racer_id + 'all';
+			var pbl = '#proglabel-' + data[i].racer_id + 'all';
+			$(pbl).text(String(data[i].count+"/{{ lane_ct }}"));
+			$(pb).progressbar({	max: {{ lane_ct }}, value: data[i].count});
+
+			if (data[i].count == {{ lane_ct }}) {
+				$(pb).addClass("done");
+				$(pbl).text("Complete!");
+			} else {
+				$(pb).addClass("not-done");
+			}
+			$(pb).height(h);
+			pb = '#progress-' + data[i].racer_id;
+			pbl = '#proglabel-' + data[i].racer_id;
+			$(pbl).text(String(data[i].count+"/{{ lane_ct }}"));
+			$(pb).progressbar({	max: {{ lane_ct }}, value: data[i].count });
+			if (data[i].count == {{ lane_ct }}) {
+				$(pb).addClass("done");
+				$(pbl).text("Complete!");
+			} else {
+				$(pb).addClass("not-done");
+			}
+			$(pb).height(h);
+		}
+
+	}
+	refreshData('standings', updateUI);
+	$('#tab-container').easytabs({
+		animate: false,
+		animationSpeed: ANIMATE_MS,
+		updateHash: false,
+		cycle: CYCLE_MS,
+		uiTabs: true
+	});
+}
+/*****************************************************************************
+ * END Standings 
+ *****************************************************************************/
+
+function listenForUpdates() {
+	var RACE_UPDATE_PORT = 8080;
+	var url = 'ws://' + document.location.hostname + ':' + RACE_UPDATE_PORT + '/socket/refresh/';
+
+	console.log('Connecting to ws-refresh at ', url, '...');
+	ws_refresh = new WebSocket(url);
+	ws_refresh.onopen = function () {
+		ws_refresh.send('Happy Birthday!!');
+		console.log('Server connection established on ' + ws_refresh + '.  Listening for updates.');
+		socketConnected = true;
+	}
+	ws_refresh.onerror = function (error) {
+		console.log('listenForUpdates error: ' + error);
+		socketConnected = false;
+	}
+	ws_refresh.onmessage = function (e) {
+		console.log('Received From Server: ' + e.data); //log the received message
+		updateStatus();
+		updateStandings();
+		showResultDialog();
+		scrollToCurrentRun();
+	}
+
+	window.onbeforeunload = function() {
+		if (!ws_refresh) {
+			ws_refresh.close();
+			console.log('disconnectUpdateListener: Closed ws connection.')
+			socketConnected = false;
+		}
+	}
+}
+
+function updateStatusbar(pct) {
+	$("#overall_progressbar").progressbar({ max: 100, value: pct });
+	$("#overall_progresslabel").text("Race is "+pct+"% complete");
+
+	if (pct == 100) {
+		$("#overall_progressbar").addClass("done");
+	} else {
+		$("#overall_progressbar").addClass("not-done");
+	}
+}
+
+function startup() {
+	console.log("Entering startup()");
+	updateStatus()
+	updateStandings();
+
+	$("button").button();
+
+	$('#showStatus').click(function() {
+		$('.view_standings').css('display','none');
+		$('.view_status').css('display','inherit');
+		scrollToCurrentRun();
+	});
+	$('#showStandings').click(function() {
+		$('.view_standings').css('display','inline-block');
+		$('.view_status').css('display','none');
+	});
+;
+	$('.view_standings').css('display','inline-block');
+	$('.view_status').css('display','none');
+
+	$('#toggleScreenToggle').click(function() {
+		screenToggle = !screenToggle;
+		$('#toggleScreenToggle').button('option', 'label', 'Auto-Play ' + String((screenToggle) ? "on" : "off"));
+	});
+
+	setInterval(function() {
+		/* Runs all the time, only acts when screenToggle is true */
+		if (screenToggle === true) {
+			if (screenToggleValue === 1) {
+				$('#showStatus').trigger("click");
+				scrollToCurrentRun();
+			} else {
+				$('#showStandings').trigger("click");
+			}
+			screenToggleValue = 1 - screenToggleValue;
+		}
+	}, SCREEN_TOGGLE_MS);
+
+	listenForUpdates(); /* web sockets update notifier */
+
+	if (socketConnected) {
+		$('#refreshStandings').hide();
+		$('#refreshStatus').hide();
+	} else {
+		$('#refreshStandings').click(function() {
+			updateStandings();
+		});
+		$('#refreshStatus').click(function() {
+			updateStatus(true);
+		});
+	}
+
+	$("#rundetail_dialog").dialog({
+		height: "auto",
+		width: "90%",
+		modal: true,
+		autoOpen: false,
+		closeOnEscape: true,
+		open: function(event, ui) {
+			setTimeout("$('#rundetail_dialog').dialog('close');", 10000);
+		},
+		close: function(event, ui) {
+			scrollToCurrentRun();
+		}
+	});
+	console.log("Exiting startup()");
+}
+
+</script>
+<title>Race Observer</title>
+</head>
+
+<body id="body" onload="startup()" height="100%">
+
+<div id='heading'>
+	<table width="100%">
+		<tr><td class="title" colspan="4">{{ derbyevent_event_name }} - {{ race_name }}</td>
+			<!-- <td colspan="1" class="fine">DB stamp: <span id="last_refresh">last_refresh</span></td> -->
+			<td colspan="2">
+			<button id="toggleScreenToggle">Auto-play</button>
+			<button id="refreshStandings" class="view_standings">Refresh standings</button>
+			<button id="refreshStatus" class="view_status">Refresh status</button>
+			<button id="showStatus" class="view_standings">View current race status</button>
+			<button id="showStandings" class="view_status">View current standings</button>
+			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
+			<!--  for testing:
+			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
+			<button id="testSpeed" onclick='testSpeed()'>testSpeed</button>
+			 end testing  -->
+			</td>
+		</tr>
+		<tr>
+		<td colspan="6" width="100%"><div id="overall_progressbar"><div class="progress-label" id="overall_progresslabel"></div></div></td>
+		</tr>
+	</table>
+</div>
+
+<table width='100%'>
+<tr><td>
+	<!--  Standings view -->
+
+	<div id="tab-container" class="tab-container view_standings">
+		<ul class="etabs view_standings">
+		   <li class="tab"><a href="#divAll">All</a></li>
+		   <li class="tab"><a href="#divTiger">Tiger</a></li>
+		   <li class="tab"><a href="#divWolf">Wolf</a></li>
+		   <li class="tab"><a href="#divBear">Bear</a></li>
+		   <li class="tab"><a href="#divWI">WEBELOS I</a></li>
+		   <li class="tab"><a href="#divWII">WEBELOS II</a></li>
+		</ul>
+
+		<div id="divAll">
+			<table id="tblStandingsAll">
+			</table>
+		</div>
+		<div id="divTiger">
+			<table id="tblStandingsTiger">
+			</table>
+		</div>
+		<div id="divWolf">
+			<table id="tblStandingsWolf">
+			</table>
+		</div>
+		<div id="divBear">
+			<table id="tblStandingsBear">
+			</table>
+		</div>
+		<div id="divWI">
+			<table id="tblStandingsWI">
+			</table>
+		</div>
+		<div id="divWII">
+			<table id="tblStandingsWII">
+			</table>
+		</div>
+	</div>
+	</td></tr>
+
+	
+
+<tr><td>
+	<!--  Status view -->
+
+	<div id="status" class="view_status">
+		<div id='run_all'></div>
+	</div>
+</td></tr>
+</table>
+
+<!--  Run result detail view -->
+<div id="rundetail_dialog" class="view_rundetail" title="Latest run results"></div>
+
+</body>
+</html>

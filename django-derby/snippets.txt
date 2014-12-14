@@ -1,0 +1,22 @@
+sudo pip install Django --upgrade
+python manage.py runserver 0.0.0.0:8000
+python manage.py migrate
+python manage.py sql runner
+python manage.py sqlall runner
+python manage.py shell
+python manage.py collectstatic
+python manage.py seedRace 1 1
+idle-python2.7 -r manage.py shell
+python manage.py test runner --traceback
+python manage.py test runner.tests.EventManagerTestSuite.testRunRace
+python manage.py dumpdata --format=json --indent=4 > runner/fixtures/all.json
+
+
+.help
+fuser derby.db #returns pid or nothing
+select * from sqlite_master where type='table' and name like 'runner%';
+
+update runner_run set run_completed = 0, stamp=CURRENT_TIMESTAMP where race_id = 1;
+update runner_runplace set seconds = null, dnf = 0, stamp=CURRENT_TIMESTAMP where run_id in
+	(select run_id from runner_run where race_id = 1);
+update runner_current set run_id = 1, stamp=CURRENT_TIMESTAMP;

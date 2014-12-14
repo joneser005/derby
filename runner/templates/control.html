@@ -1,0 +1,411 @@
+{% load humanize %}
+<!doctype html>
+<html lang="us">
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" href="/static/favicon.png" type="image/png">
+<link rel="icon" href="/static/favicon.png" type="image/png">
+<link href="/static/css/blitzer/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+<script src="/static/js/jquery-1.9.1.js"></script>
+<script src="/static/js/jquery-ui-1.10.3.custom.js"></script>
+
+<link href="/static/css/myderby.css" rel="stylesheet">
+<script src="/static/js/myderby.js"></script>
+
+<script>
+/* Status data returned:
+
+    {now: d/t,
+     race_id: id,
+     lane_ct: no,
+     current_run_id: id or 'n/a'
+     current_run_seq: id or 'n/a',
+     current_stamp: d/t or 'n/a',
+     runs:
+         [{run_id:id,
+           run_seq:seq,
+           run_completed:1|0, 
+           runplaces:
+              [{runplace_id:id, lane:no, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
+               {runplace_id:id, lane:no, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
+               . . .
+               {runplace_id:id, lane:no, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt}]
+           }]
+    }
+ */
+ 
+var ws_refresh = null;
+var TIMEOUT_SECS = 30;
+
+function getCookie(name) {
+	var cookieValue = null;
+	if (document.cookie && document.cookie != '') {
+		var cookies = document.cookie.split(';');
+		for (var i = 0; i < cookies.length; i++) {
+			var cookie = jQuery.trim(cookies[i]);
+			// Does this cookie string begin with the name we want?
+			if (cookie.substring(0, name.length + 1) == (name + '=')) {
+				cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+				break;
+			}
+		}
+	}
+	return cookieValue;
+}
+
+/* HACK: Copied from overhead.html, then removed standings stuff
+ * updateUi = function to update UI
+ */
+function refreshData(updateUI, nocache) {
+	if (typeof(nocache)==='undefined') nocache = false;
+
+	var url = "/runner/race/{{race_id}}/status/data";
+	if (nocache == true) {
+		url += "nocache";
+	}
+
+	$.getJSON(url, function(data) {
+		console.log('Async getdata request to ', url);
+	}).done(function(data) {
+		updateUI(data);
+		updateLastRefreshUI(data.now);
+		scrollToRun(event, data.current_run_seq-1);
+		console.log("refreshData completed at:", data.now);
+	}).fail(function(response) {
+		console.log("ERROR: refreshData error", response);
+	}).always(function() {
+	});
+}
+
+function saveResults(run_seq, data) {
+	console.log("Entering saveResults(" + run_seq + ", " + data + ")");
+	var url = "/runner/race/{{race_id}}/setrunresult/";
+	data.race_id = {{race_id}};
+	data.run_seq = run_seq;
+	data.lane_ct = {{lane_ct}};
+	var csrftoken = getCookie('csrftoken');
+
+	$.ajax(url, {
+		data : JSON.stringify(data),
+		contentType : 'application/json',
+		type : 'POST',
+		beforeSend: function(xhr, settings) {
+			console.log('csrftoken=',csrftoken)
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		}
+	}).done(function(data) {
+		console.log("saveResults done.  data=", data);
+		updateStatus(nocache=true);
+		console.log('BEFORE broadcastUpdate');
+		broadcastUpdate();
+		console.log('AFTER broadcastUpdate');
+	}).fail(function(response) {
+		console.log("ERROR: saveResults failed", response);
+		showError(response['msg']);
+	});
+}
+
+function getSwapDialogHtml(racer_id_1, pool) {
+	/* pool  = [ { racer_id: x, run_seq: y, name: a, img_url: b, rank: c } ... ] */
+	console.log('pool=',pool);
+	var html = "<table class='swap-table'><tr>";
+	var max_cars = 5;
+	var width = 90/max_cars;
+	for (i in pool) {
+		var row = pool[i];
+		html += "<td id='choice_racer_id_"+row['racer_id']+"' style='width:"+width+"%;' class='center swap-choice' racer_id='"+row['racer_id']+"' run_seq='"+row['run_seq']+"'><img src='/media/"+row['img_url']+"' alt='"+row['name']+"'/><br/>#"+row['racer_id'] + ': ' + row['name']+" ("+row['rank']+")</a></td>";
+		if (parseInt(i)+1 == max_cars) break;
+	}
+	html += "</tr></table>";
+	console.log('html='+html);
+	return html;
+}
+
+function setSwapChoice(event) {
+	var run_seq = event.data.run_seq_2;
+	var racer_id = event.data.racer_id_2;
+	$("#dlg-swap-choice-run-seq-id").text(run_seq);
+	$("#dlg-swap-choice-racer-id").text(racer_id);
+	$("[id^=choice_racer_id_]").removeClass("selected");
+	$("#choice_racer_id_"+racer_id).addClass("selected");
+}
+
+function swapRacers(race_id, lane, run_seq_1, racer_id_1, run_seq_2, racer_id_2) {
+	/* run_seq is Current.run_seq */
+	var url = "/runner/race/{{race_id}}/swapracers/";
+	var data = {};
+	data.race_id = race_id;
+	data.lane = lane;
+	data.run_seq_1 = run_seq_1;
+	data.racer_id_1 = racer_id_1;
+	data.run_seq_2 = run_seq_2;
+	data.racer_id_2 = racer_id_2;
+	var csrftoken = getCookie('csrftoken');
+	console.log(data);
+	console.log(JSON.stringify(data));
+	$.ajax(url, {
+		data : JSON.stringify(data),
+		async: false,
+		contentType : 'application/json',
+		type : 'POST',
+		beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		}
+	}).done(function(response) {
+		console.log("Success!  ", response);
+		updateStatus(nocache=true); // refresh the UI
+	}).fail(function(response) {
+		console.log("ERROR: swapRacers failed", response);
+		alert(response['msg']);
+	});
+}
+
+function doSwapOnConfirm(lane, run_seq_1, racer_id_1, racer_pool) {
+	var html = getSwapDialogHtml(racer_id_1, racer_pool);
+	$("#dlg-swap-content").html(html);
+
+	$(".swap-choice").each(function() {
+		$(this).on('click tap', null, { run_seq_2: $(this).attr('run_seq'), racer_id_2: $(this).attr('racer_id') }, setSwapChoice);
+	});
+
+	console.log('Showing doSwapOnConfirm dialog...');
+	var w = $( window ).width() - 50;
+	$('#dlg-swap').dialog({
+		modal: true,
+		autoOpen: true,
+		width: w,
+		position: "top left",
+		buttons: {
+			Select: function() {
+				run_seq_2 = $("#dlg-swap-choice-run-seq-id").text();
+				racer_id_2 = $("#dlg-swap-choice-racer-id").text();
+				swapRacers({{race_id}}, lane, run_seq_1, racer_id_1, run_seq_2, racer_id_2);
+				$(this).dialog("close");
+			},
+			Cancel: function() {
+				$(this).dialog("close");
+			}
+		}
+	});
+}
+
+function selectSwapRacers(event) {
+	var lane = event.data;
+	var run_seq = $('#lane_'+lane).attr('run_seq');
+	var racer_id = $('#lane_'+lane).attr('racer_id');
+	var url = "/runner/race/{{race_id}}/getswapcandidates/";
+	var data = {};
+	data.run_seq = run_seq
+	data.racer_id = racer_id;
+	data.lane = lane;
+	var csrftoken = getCookie('csrftoken');
+	console.log(data);
+	console.log(JSON.stringify(data));
+	var result = false; // true indicates a swap occured
+	$.ajax(url, {
+		data : JSON.stringify(data),
+		async: false,
+		contentType : 'application/json',
+		type : 'POST',
+		beforeSend: function(xhr, settings) {
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		}
+	}).done(function(data) {
+		console.log("getAvailableSwaps done.  data=", data);
+		var pool = JSON.parse(data);
+		doSwapOnConfirm(lane=lane, run_seq_1=run_seq, racer_id_1=racer_id, racer_pool=pool);
+		result = true;
+	}).fail(function(response) {
+		console.log("ERROR: getAvailableSwaps failed", response);
+		alert(response['msg']);
+	});
+	return result;
+}
+
+function getTrackResults(eventObj) {
+	var run_seq = eventObj.data;
+	console.log('User requesting track results for current run, run_seq=', run_seq);
+	listenForTrackResultsStart(TIMEOUT_SECS);
+	var url = "/runner/race/{{race_id}}/runresult/"+TIMEOUT_SECS;
+	$.getJSON(url, function(data) {
+		console.log('Async getJSON request to ', url);
+	}).done(function(data) {
+		console.log("SUCCESS: refreshData completed, result data = ", data);
+		$('#last_refresh').text(data.now);
+		confirmMsg = "Results timestamp: " + data[0];
+		for (key in data) {
+			if ("0" == key) continue;
+			confirmMsg += '\n\tLane ' + key + ': ' + data[key] + ' sec.';
+		}
+		confirmMsg += "\n\nApply these results to Run #" + run_seq + "?";
+		keepResult = window.confirm(confirmMsg);
+		if (keepResult) {
+			saveResults(run_seq, data);
+		}
+	}).fail(function(response) {
+		console.log("ERROR: refreshData error");
+		showError(response);
+	}).always(function() {
+		listenForTrackResultsStop(run_seq);
+	});
+}
+
+var trackListenInterval = null; /* used to count down the listen time */
+var listenSecs = TIMEOUT_SECS;
+
+function listenForTrackResultsStart() {
+	$('#run_all').find("tr."+CURRENT_CLASS).off('click tap');
+	listenSecs = TIMEOUT_SECS;
+	update_remaining_listen_time(); /* Initial msg set */
+	trackListenInterval = setInterval(update_remaining_listen_time,1000); /* value must be 1000 (1 sec) */
+	$('#track_status').show();
+}
+
+function listenForTrackResultsStop(run_seq) {
+	$('#run_all').find("tr."+CURRENT_CLASS).on('click tap', null, run_seq, getTrackResults);
+	listenSecs = TIMEOUT_SECS;
+	clearInterval(trackListenInterval);
+	$('#track_status').hide();
+}
+
+function update_remaining_listen_time()
+{
+	if (0 < listenSecs) {
+		$("#track_status").text("Listening for track results - "+listenSecs+" seconds remain");
+		listenSecs--;
+	}
+}
+
+function updateStatus(nocache) {
+	console.log('Entered updateStatus');
+	if (typeof(nocache)==='undefined') nocache = false;
+	if (nocache) {
+		console.log('nocache option in effect');
+	}
+	$('div#status').find(".run-table").remove();
+
+	function fnUpdate(data) {
+		var htmlAllRuns = '';
+		console.log("data=",data);
+		console.log("data.runs=",data.runs);
+		console.log("data.runs.length=",data.runs.length);
+		for (i = 1; i <= data.runs.length; i++) {
+			htmlAllRuns += renderRun(data, i, reversed=true, detailed=true);
+		}
+		$('#run_all').find("tr").remove();
+		console.log(htmlAllRuns);
+		$('#run_all').append(htmlAllRuns);
+		$("button").button();
+		listenForTrackResultsStop(data['current_run_seq']); /* ideally, nobody refreshes data while listening for trace results... */
+		$('#run_all').find("tr."+CURRENT_CLASS).children('td:first').append('<div id="track_status" style="display:none">***** Waiting for track results *****</div>');
+//			var pct = ((data['current_run_seq']-1) / data.runs.length) * 100; // OLD, not accurate after the last run
+		var completed = data.runs.filter(function(value) { return value.run_completed == true }).length;
+		var pct = (completed / data.runs.length) * 100;
+		updateStatusbar(Math.round(pct));
+		$("[id^=#nav_next]").css("fontSize", "xx-large");
+		for (var lane=1; lane<={{lane_ct}}; lane++) {
+			$('#lane_'+lane).on('click tap', null, lane, selectSwapRacers);
+		}
+	}
+	refreshData(fnUpdate, nocache);
+	console.log('Exiting updateStatus');
+}
+
+function showError(msg) {
+	alert("Track timeout or error.", msg);
+}
+
+function updateStatusbar(pct) {
+	$("#overall_progressbar").progressbar({ max: 100, value: pct });
+	$("#overall_progresslabel").text("Race is "+pct+"% complete");
+
+	if (pct == 100) {
+		$("#overall_progressbar").addClass("done");
+	} else {
+		$("#overall_progressbar").addClass("not-done");
+	}
+}
+
+function broadcastUpdate() {
+	if (ws_refresh) {
+		ws_refresh.send('Peekaboo!');
+	}
+}
+
+function broadcastUpdateInit() {
+	var RACE_UPDATE_PORT = 8080;
+	var url = 'ws://' + document.location.hostname + ':' + RACE_UPDATE_PORT + '/socket/refresh/';
+
+	console.log('broadcastUpdate: Connecting to ws-refresh at ', url, '...');
+	ws_refresh = new WebSocket(url);
+	ws_refresh.onopen = function () {
+		ws_refresh.send('Happy Birthday!!!!!');
+		console.log('broadcastUpdate: Server connection established on ' + ws_refresh + '.  Listening for updates.');
+	}
+	ws_refresh.onerror = function (error) {
+		console.log('broadcastUpdate: Error: ', error);
+	}
+// We don't want the controller updating on this - we're the ones running the show!
+// 	ws_refresh.onmessage = function (e) {
+// 		console.log('broadcastUpdate: Received: ' + e.data); //log the received message
+// 		updateStatus(showAll=true);
+// 	}
+
+	window.onbeforeunload = function() {
+		if (!ws_refresh) {
+			ws_refresh.close();
+			console.log('broadcastUpdate: Closed ws connection.')
+		}
+	}
+}
+
+function startup() {
+	console.log("Entering startup()");
+	
+	updateStatus();
+
+	$('#scrollToCurrentRun').click(scrollToCurrentRun);
+
+	$('#refreshStatus').click(function() {
+		updateStatus();
+	});
+	
+	broadcastUpdateInit();
+
+	$('#broadcastRefresh').click(function() {
+		console.log(ws_refresh);
+		broadcastUpdate();
+	});
+}
+ </script>
+ <title>Race Control</title>
+</head>
+
+<body id="body" onload="startup()" height="100%">
+<div id='heading'>
+	<table width="100%">
+	<tr><td class="title" colspan="5">{{ derbyevent_event_name }} - {{ race_name }}</td>
+		<td colspan="1" class="fine">DB stamp: <span id="last_refresh">last_refresh</span></td></tr>
+		<tr><td colspan="6" width="40%"><div id="overall_progressbar"><div class="progress-label" id="overall_progresslabel"></div></div></td></tr>
+	</table>
+</div>
+
+<table>
+<tr><td>
+	<button id="refreshStatus" class="view_status">Refresh status</button>
+	<button id="scrollToCurrentRun" class="view_status">Show current run</button>
+	<button id="broadcastRefresh">Broadcast refresh</button>
+</td></tr>
+<tr><td>
+	<div id="status" class="view_status">
+		<div id='run_all'></div>
+	</div>
+</td></tr></table>
+
+<div id="dlg-swap" class="my-dialog" title="Choose a racer to swap">
+  <div id="dlg-swap-content"></div>
+  <div id="dlg-swap-choice-racer-id" style="display: none"></div>
+  <div id="dlg-swap-choice-run-seq-id" style="display: none"></div>
+</div>
+</body>
+</html>
