@@ -3,8 +3,9 @@ from time import clock
 import random
 from sys import stdout
 import django.test
+
 from models import DerbyEvent, Race, Racer, Run, RunPlace, Group
-from runraces import EventManager, RaceAdminException
+from engine import EventManager, RaceAdminException
 
 # log = logging.getLogger('runner')
 

@@ -139,6 +139,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 # "runner.context_processors.race_control"
 )
 
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',

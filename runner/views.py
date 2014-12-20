@@ -12,7 +12,7 @@ from django.db.models.fields.files import ImageFieldFile
 from django.db import transaction
  
 from models import Current, Race, Run, RunPlace, Group
-from runraces import EventManager
+from engine import EventManager
 import readers
 
 log = logging.getLogger('runner')

@@ -7,7 +7,7 @@ log = logging.getLogger('runner')
 
 class Command(BaseCommand):
     args = '{race_id} {group_id}'
-    help = 'Seeds or reseeds a Race using a RaceGroup'
+    help = 'Seeds or reseeds a Race using a RaceGroup, combo-tumbler format'
 
     def handle(self, *args, **options):
         if len(args) >= 2:
@@ -16,13 +16,13 @@ class Command(BaseCommand):
             race_id = args[0]
             group_id = args[1]
         else:
-            self.stdout.write('seedRace expected race_id group_id, got: {}'.format(args))
+            self.stdout.write('seedRace2 expected race_id group_id, got: {}'.format(args))
             return
 
         race = Race.objects.get(pk=race_id)
         group = Group.objects.get(pk=group_id)
 
         rm = EventManager()
-        rm.seedRace(race, group)
+        rm.seedRace2(race, group)
 
-        log.info('seedRace(race id={}/{}  group={}/{}) completed.'.format(race_id, race, group_id, group))
+        log.info('seedRace2(race id={}/{}  group={}/{}) completed.'.format(race_id, race, group_id, group))
