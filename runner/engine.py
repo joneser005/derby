@@ -57,89 +57,110 @@ class EventManager:
             log.debug('Run = {0}'.format(cr))
         return completedRuns
 
-    def seedRace2(self, race, race_group):
+    def seedRace(self, race, race_group):
         ''' Create placeholder Run+RunPlace records.
         Each lane's Runs are in Racer sequential order.
         Each lane's Runs start with a different Racer.
         Think of the wheels on a combination lock.
         Each 'wheel' must feature a different Racer for the first Run....
-        .... thereby guaranteeing no Run features the same racer in two lanes (impossible!) 
+        .... thereby guaranteeing no Run features the same racer in two lanes (impossible!)
         '''
         racers = race_group.racers
         race.racer_group = race_group
         start_seq = 1 # for a given Race, each Run is numbered in sequence
-        log.debug('seedRace2(race, racers), racers.count()={0}'.format(racers.count()))
+        log.debug('seedRace(race, racers), racers.count()={0}'.format(racers.count()))
 
-        # TODO Below is copied from seedRace:
-        # Circle back and rewrite this for the new algo 
-#         if 0 < race.run_set.count():
-#             old_racer_count = race.run_set.count()
-#             if old_racer_count == racers.count():
-#                 log.warn('seedRace has nothing to do!  old_racer_count == racers.count() == {0}'.format(old_racer_count))
-#                 return
-# 
-#             runs = self.getRunsCompleted(race)
-#             if runs != None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct:
-#                 msg = 'Cannot re-seed race {3} - we are too far into the race!  runs.count() = {0}, race.run_set.count() = {1}, race.lane_ct = {2}'.format(
-#                     runs.count(), race.run_set.count(), race.lane_ct, race)
-#                 log.warn(msg)
-#                 raise RaceAdminException(msg)
-#             else:
-#                 diff = racers.count() - old_racer_count
-#                 log.debug('seedRace reseed Racer count diff is {0}'.format(diff))
-#                 # Prepare for reseed in cases where racers.count() went up or down since last reseed
-#                 if 0 < diff:    # Adding Racers
-#                     # Remove the last lane_ct-1 Runs
-#                     delete_ct = race.lane_ct - 1
-#                 else:   # Removing Racers (the equality case is earlier in this method)
-#                     # Remove the last lane_ct + (diff-1) Runs, new start_seq = 
-#                     delete_ct = race.lane_ct - 1 + abs(diff)
-# 
-#                 # Delete last lane_ct-1 Runs
-#                 for r in Run.objects.filter(race=race).order_by('-id')[:delete_ct]:
-#                     log.debug('Deleting Run.run_seq={0}'.format(r.run_seq))
-#                     r.delete()                 # This will also delete the associated RunPlace records
-#                 log.info('seedRace deleted {0} existing Run records.'.format(delete_ct))
-# 
-#                 start_seq = old_racer_count - delete_ct + 1
-        # TODO END REFACTOR into separate method
- 
-        log.info('seedRace2 start_seq = {0}'.format(start_seq))
+        if 0 == race.run_set.count():
+            # REFACTOR: Move to new function, seedNewRace
+            # Fresh race
+            log.info('Seeding a new race.....')
 
-        # Create Run and RunPlace records
-        # One Run per Racer equates to one RunPlace per Racer+Lane
-        random.seed()
-        log.debug('racers.count()={0}, race')
-        offsets = random.sample(range(0, racers.count()), race.lane_ct)
-        racers_array = racers.all()[:]
-        lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
-#         log.debug('racers.count()={0}, lane_ct={1}'.format(racers.count(), race.lane_ct))
-        for lane in range(1, race.lane_ct+1):
-            log.debug('Creating Lane Tumbler #{0}'.format(lane))
-            tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
-            # TODO !!!!!: Make sure this technique works with the tumbler algo for reseeding (that is, when start_seq > 0)
-            for seq in range(start_seq, racers.count()+1):  # seq is one-based 
-                racerIndex = seq + lane -2 + offsets[lane-1] # both values are one-based, so subtract 2
-                while racerIndex >= racers.count():
-                    racerIndex -= racers.count();
-                log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
-                tumbler.append(racers_array[racerIndex])
-            log.debug('lane={0}'.format(lane))
-            lane_tumbler[lane-1] = tumbler
-
-        # Create the Run and RunPlace records based on above
-        log.debug('Creating Run and RunPlace records.....')
-        for seq in range(1, racers.count()+1):
-            run = race.run_set.create(run_seq=seq)
-            seedTableRow = 'Run #{0}: '.format(seq)
+            # Create Run and RunPlace records
+            # One Run per Racer equates to one RunPlace per Racer+Lane
+            random.seed()
+            log.debug('racers.count()={0}, race')
+            offsets = random.sample(range(0, racers.count()), race.lane_ct)
+            for off in offsets:
+                log.debug('offset: {0}'.format(off))
+            racers_array = racers.all()[:]
+            lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
             for lane in range(1, race.lane_ct+1):
-                run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
-                seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
-            seedTableRow += '\n'
-            log.debug(seedTableRow)
+                log.debug('Creating Lane Tumbler #{0}'.format(lane))
+                tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
+                for seq in range(start_seq, racers.count()+1):  # seq is one-based 
+                    racerIndex = seq -1 + offsets[lane-1] # subtract one b/c seq is one-based
+                    while racerIndex >= racers.count():
+                        racerIndex -= racers.count();
+                    log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
+                    tumbler.append(racers_array[racerIndex])
+                log.debug('lane={0}'.format(lane))
+                lane_tumbler[lane-1] = tumbler
+    
+            # Create the Run and RunPlace records based on above
+            log.debug('Creating Run and RunPlace records.....')
+            for seq in range(1, racers.count()+1):
+                run = race.run_set.create(run_seq=seq)
+                seedTableRow = 'Run #{0}: '.format(seq)
+                for lane in range(1, race.lane_ct+1):
+                    run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
+                    seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
+                seedTableRow += '\n'
+                log.debug(seedTableRow)
+        else:
+            # REFACTOR: Move to new function, reseedRace
+            runs = self.getRunsCompleted(race)
+            if runs != None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct - 1:
+                msg = 'Cannot reseed race {3} - we are too far into the race!  runs.count() = {0}, race.run_set.count() = {1}, race.lane_ct = {2}'.format(
+                    runs.count(), race.run_set.count(), race.lane_ct, race)
+                log.warn(msg)
+                raise RaceAdminException(msg)
+            else:
+                diff = racers.count() - race.run_set.count()
 
+                # REFACTOR: Find the new Racers
+                new_racers = []
+                for racer in racers.all():
+#                     print(dir(racer))
+                    found = False
+#                     race.run_set.filter()
+                    for run in race.run_set.all():
+                        for rx in run.runplace_set.all():
+                            if (rx.racer.id == racer.id):
+                                found = True
+#                                 log.debug('Found racer {0}'.format(racer))
+                                break;
+                        if found: break
+                    if not found:
+                        new_racers.append(racer)
+                        log.debug('Added new racer {0}'.format(racer))
+                if len(new_racers) == len(race.racer_group.racers.all()):
+                    raise 'Failed to identify new racers!'
+                log.debug('len(new_racers)={0}'.format(len(new_racers)))
 
-    def seedRace(self, race, race_group):
+                # REFACTOR: Patch in the new Racers 
+                log.warn('TODO: Add support for removing Racers')
+                #TODO: Add support for removing Racers
+                for new_racer in new_racers:
+                    new_run = race.run_set.create(run_seq=race.run_set.count()+1)  # run_seq is one-based
+                    first_runseq_swap = race.run_set.count() - (race.lane_ct-1)
+                    lane = 1
+                    for swap_run in race.run_set.filter(run_seq__gte=first_runseq_swap):
+                        print('lane={}'.format(lane))
+                        swap_rp = swap_run.runplace_set.filter(lane__exact=lane)
+                        swap_rp = swap_rp[0]
+#                         swap_rp = swap_run.runplace_set.get(lane__exact=lane)  # DoesNotExist: RunPlace matching query does not exist.
+                        swap_racer = swap_rp.racer
+                        print('SWAP runseq[{0}], lane[{1}]: swap_racer={2} <==> new_racer={3} '.format(swap_run.run_seq, lane, swap_racer, new_racer))
+                        new_run.runplace_set.create(run=new_run, racer=swap_racer, lane=lane)
+                        swap_rp.racer=new_racer
+                        swap_rp.save()
+                        lane += 1
+                        if lane >= race.lane_ct:
+                            break;
+                    new_run.runplace_set.create(run=new_run, racer=new_racer, lane=race.lane_ct)  # last lane, goes with #REFNOTE1....., above 
+        # END reseed
+
+    def seedRaceOLD(self, race, race_group):
         ''' Create placeholder Run+RunPlace records in sequential order.
         Also call this if we get new racers after the Race has started, noting it will
         fail if there are not at least lane_ct-1 Runs left open.
@@ -399,7 +420,7 @@ def main():
     for r in rg.racers.all():
         print r
         print('#{} {}'.format(r.id, r.name))
-    em.seedRace2(race, rg)
+    em.seedRace(race, rg)
     em.getRaceStatusDict(race)
 #     em.runRace(race, tests.resultReaderRandomDnf)
 

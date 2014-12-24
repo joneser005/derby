@@ -23,6 +23,6 @@ class Command(BaseCommand):
         group = Group.objects.get(pk=group_id)
 
         rm = EventManager()
-        rm.seedRace2(race, group)
+        rm.seedRace(race, group)
 
-        log.info('seedRace2(race id={}/{}  group={}/{}) completed.'.format(race_id, race, group_id, group))
+        log.info('seedRace(race id={}/{}  group={}/{}) completed.'.format(race_id, race, group_id, group))

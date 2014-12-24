@@ -63,6 +63,10 @@ class Racer(models.Model):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
             ' (' + self.person.name_first + ' ' + self.person.name_last + ')'
 
+    def __str__(self):
+        return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
+            ' (' + self.person.name_first + ' ' + self.person.name_last + ')'
+
     class Meta:
         ordering = ["pk"]
 
@@ -85,7 +89,7 @@ class Race(models.Model):
     name = models.CharField(max_length=200)
     lane_ct = models.PositiveIntegerField()
     stamp = models.DateTimeField(auto_now=True)
-    level = models.PositiveIntegerField(choices=[(1,'Heats'), (2,'Finals'), (3,'Open Division')])
+    level = models.PositiveIntegerField(choices=[(1,'Heats'), (2,'Finals'), (3,'Open Division')])  # FIXME: Conceptually, this isn't right (in python, defaults are evaluated only once), should probably be ok in this context, though
 
     def runs(self):
         for run in self.run_set.all().order_by('run_seq'):
