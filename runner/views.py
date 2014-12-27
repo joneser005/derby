@@ -9,7 +9,6 @@ from django.http import HttpResponse, Http404
 from django.template import Context, RequestContext
 from django.shortcuts import render_to_response, render, redirect
 from django.db.models.fields.files import ImageFieldFile
-from django.db import transaction
  
 from models import Current, Race, Run, RunPlace, Group
 from engine import EventManager
@@ -212,7 +211,7 @@ def getStandingsDataNoCache(request, race_id):
 
 # @ensure_csrf_cookie
 def getSwapCandidates(request, race_id):
-    log.debug('Entered getSwapCandidates')
+    log.debug('ENTER getSwapCandidates')
     if not request.user.is_authenticated() or request.user.username != 'robb':
         log.warn("Unauthorized call to getSwapCandidates from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
@@ -223,14 +222,15 @@ def getSwapCandidates(request, race_id):
     lane = args['lane']
     log.debug('run_seq={}, racer_id={}, lane={}'.format(run_seq, racer_id, lane))
     rm = EventManager()
-    candidates = rm.getSwapCandidatesList(run_seq, lane) # results also based on Current.run_seq
+    candidates = rm.getSwapCandidatesList(run_seq, lane, racer_id) # results also based on Current.run_seq
     jsonResult = json.dumps(candidates, default=jsonDefaultHandler)
-    log.debug('Exiting getSwapCandidates')
+    log.debug('EXIT getSwapCandidates')
     return HttpResponse(jsonResult)
 
 # @ensure_csrf_cookie
 def swapRacers(request, race_id):
-    log.debug('Entered getSwapCandidates')
+    ''' Swaps two Racers from different Runs. '''
+    log.debug('ENTER swapRacers')
     if not request.user.is_authenticated() or request.user.username != 'robb':
         log.warn("Unauthorized call to swapRacers from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
@@ -242,32 +242,11 @@ def swapRacers(request, race_id):
     racer_id_2 = args['racer_id_2']
     lane = args['lane']
     log.debug('race_id={}, run_seq_1={}, racer_id_1={}, run_seq_2={}, racer_id_2={}, lane={}'.format(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane))
-    run1 = Run.objects.get(race_id=race_id, run_seq=run_seq_1)
-    rp1 = run1.runplace_set.get(lane=lane)
-    run2 = Run.objects.get(race_id=race_id, run_seq=run_seq_2)
-    rp2 = run2.runplace_set.get(lane=lane)
-    assert(rp2.seconds == None), "rp2.seconds is not None!"
-    # Not checking rp1, in case we have a situation where we are re-running a race, which is entirely possible if we have to swap racers on the fly (e.g. fell off the track)
-    assert(rp1.racer != rp2.racer), "Cannot swap the same Racer!"
 
-    with transaction.atomic():
-        tempRacer = rp1.racer
-
-        rp1.racer = rp2.racer
-        rp1.seconds = None
-        rp1.dnf = 0
-        rp1.stamp = datetime.datetime.now()
-        rp1.save()
-
-        rp2.racer = tempRacer
-        rp2.seconds = None
-        rp2.dnf = 0
-        rp2.stamp = datetime.datetime.now()
-        rp2.save()
-        log.info('Racer swap saved for lane [{}].  run_seq[{}]/racer_id[{}] <=> run_seq[{}]/racer_id[{}]'.
-                 format(lane, run_seq_1, racer_id_1, run_seq_2, racer_id_2))
-
-    log.debug('Exiting getSwapCandidates')
+    rm = EventManager()
+    print(rm)
+    rm.swapRacers(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane)
+    log.debug('EXIT swapRacers')
     return HttpResponse('success')
 
 def resetCB():

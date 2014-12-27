@@ -4,7 +4,7 @@ import random
 from sys import stdout
 import django.test
 
-from models import DerbyEvent, Race, Racer, Run, RunPlace, Group
+from models import DerbyEvent, Race, Racer, Run, RunPlace, Group, Current
 from engine import EventManager, RaceAdminException
 
 # log = logging.getLogger('runner')
@@ -21,6 +21,16 @@ class EventManagerTestSuite(django.test.TestCase):
 
     def tearDown(self):
         pass
+
+    def setCurrent(self, race, run_seq):
+        print('ENTER setCurrent')
+        print('race={}'.format(race))
+        run = race.run_set.get(run_seq__exact=run_seq)
+        print('run={}'.format(run))
+        current = Current.objects.get_or_create(race=race, run=run)
+        print('current={}'.format(current))
+        print('EXIT setCurrent')
+        return current
 
     def testSeedRaceNew_OneLane(self):
         self.seedRaceNew(1)
@@ -44,10 +54,10 @@ class EventManagerTestSuite(django.test.TestCase):
         group = Group.objects.get(id=1)
         racer_ct = group.racers.count()
 
-        self.assertTrue(0 == Run.objects.all().filter(race_id=race.id).count())
+        self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
         self.rm.seedRace(race, group) #using group from fixture data
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 
-                        'racer_ct={0}, rhs={1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 
+                        'racer_ct={0}, rhs={1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
 
         self.assertTrue(race.run_set.count() == racer_ct, 
                         'Expected race.run_set.count() == {1}.  Actual: {0}'.format(
@@ -65,6 +75,10 @@ class EventManagerTestSuite(django.test.TestCase):
         print('Exit %s'%name)
 
     def testSeedRaceExisting(self, name='testSeedRaceExisting'):
+        ''' We will not support removing a racer from the races.  This
+        becomes difficult to deal with, having Racers running random Runs
+        unless we wanted to create just throw out a Racer's results,
+        which we can already do manually, if necessary. '''
         print('Enter %s'%name)
 
         de = self.rm.createDerbyEvent(name, '2013-03-01')
@@ -78,19 +92,19 @@ class EventManagerTestSuite(django.test.TestCase):
         race = self.rm.createRace(de, name, 3, 1)
 
         print('===== SeedRace #1, adding 5 racers')
-        self.assertTrue(0 == Run.objects.all().filter(race_id=race.id).count())
+        self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
 
         racer_ct = 5
         group = getNewRacerGroup(racer_ct)
         
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #2.1 (reseed virgin +0 Racer (no-op)') # Expect log event saying nothing to do
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -98,7 +112,7 @@ class EventManagerTestSuite(django.test.TestCase):
         racer_ct = race.run_set.count() + 1
         group.racers.add(Racer.objects.get(pk=racer_ct))
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -106,7 +120,7 @@ class EventManagerTestSuite(django.test.TestCase):
         for i in range(1,6): group.racers.add(Racer.objects.get(pk=racer_ct+i))
         racer_ct = race.run_set.count() + 5
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -121,7 +135,7 @@ class EventManagerTestSuite(django.test.TestCase):
         racer_ct = race.run_set.count() + 1
         group.racers.add(Racer.objects.get(pk=racer_ct))
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -131,35 +145,16 @@ class EventManagerTestSuite(django.test.TestCase):
         racer_ct = race.run_set.count() + 1
         group.racers.add(Racer.objects.get(pk=racer_ct))
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
-
-        print('Skipping Racer subtractions until we add support to the tumbler algo.')
-#         print('===== SeedRace #3.3 (reseed partial with -1 Racers)')
-#         group.racers.remove(Racer.objects.get(pk=racer_ct))
-#         racer_ct -= 1
-#         self.rm.seedRace(race, group)
-#         self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
-#         printLaneAssignments(race)
-#         self.validateLaneAssignments(race)
-#
-#         print('===== SeedRace #3.4 (reseed partial with -2 Racers)')
-#         group.racers.remove(Racer.objects.get(pk=racer_ct))
-#         racer_ct -= 1
-#         group.racers.remove(Racer.objects.get(pk=racer_ct))
-#         racer_ct -= 1
-#         self.rm.seedRace(race, group)
-#         self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
-#         printLaneAssignments(race)
-#        self.validateLaneAssignments(race)
 
         print('===== SeedRace #3.5 (reseed partial +7 Racers)')
         printLaneAssignments(race)
         for i in range(1,8): group.racers.add(Racer.objects.get(pk=racer_ct+i))
         racer_ct = race.run_set.count() + 7
         self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.all().filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.all().filter(race_id=race.id).count()))
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -174,8 +169,6 @@ class EventManagerTestSuite(django.test.TestCase):
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #4.1 (Race completed, no Racer change (should be a no-op))')
-        # A RaceAdminException would be okay, too
-        #self.rm.seedRace(race, group)
         self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
 
         print('===== SeedRace #4.2 (completed, with +1 Racers)')
@@ -183,16 +176,79 @@ class EventManagerTestSuite(django.test.TestCase):
         group.racers.add(Racer.objects.get(pk=racer_ct))
         self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
 
-        print('Skipping Racer subtractions until we add support to the tumbler algo.')
-#         print('===== SeedRace #4.3 (completed, with -2 Racers)') # back to zero/no change, then subtract one more
-#         group.racers.remove(Racer.objects.get(pk=racer_ct))
-#         racer_ct = race.run_set.count() - 1
-#         group.racers.remove(Racer.objects.get(pk=racer_ct))
-#         racer_ct = race.run_set.count() - 1
-#         self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
-
         print('Exit %s'%name)
         return race # We use this in other tests
+
+    def testSwapRacers_basic_notstarted(self):
+#         swapRacers(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
+        name='testSwapRacers_basic_notstarted'
+        print('Enter %s'%name)
+        de = self.rm.createDerbyEvent(name, '2014-03-01')
+        race = self.rm.createRace(de, name, 6, 1)
+        self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
+        racer_ct = 14
+        group = getNewRacerGroup(racer_ct)
+        self.rm.seedRace(race, group)
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
+        printLaneAssignments(race)
+        self.validateLaneAssignments(race)
+
+        # Get Racer from:
+        run_seq = 1
+        lane = 1
+        curr = self.setCurrent(race, run_seq)
+
+        # Get racer we are swapping
+        swapee1_run = Run.objects.filter(race_id=race.id).get(run_seq=run_seq)
+        print('swapee1_run={}'.format(swapee1_run))
+        swapee1_racer = swapee1_run.runplace_set.get(lane=lane)
+        print('swapee1_racer={}'.format(swapee1_racer))
+
+        # Get swap candidates
+        candidates = self.rm.getSwapCandidatesList(run_seq, lane, swapee1_racer.racer_id)
+        print('Candidates={}'.format(candidates))
+        self.assertTrue(0 < len(candidates))
+        swapee2_run_seq = candidates[0]['run_seq']
+        swapee2_racer_id = candidates[0]['racer_id']
+
+        print('Simple swap test between run_seq[{0}] and run_seq[{1}], lane[{2}]'.format(run_seq, swapee2_run_seq, lane))
+
+        print('swapee1={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=run_seq).runplace_set.get(lane=lane)))
+        print('swapee2={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=swapee2_run_seq).runplace_set.get(lane=lane)))
+
+        # Swap with candidate #1
+        self.rm.swapRacers(race.id, run_seq, swapee1_racer.racer_id, swapee2_run_seq, swapee2_racer_id, lane)  # Just changed 3rd arg from swapee1_racer.id to swapee1_racer.racer_id 
+
+        print('swapee1={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=run_seq).runplace_set.get(lane=lane)))
+        print('swapee2={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=swapee2_run_seq).runplace_set.get(lane=lane)))
+
+        printLaneAssignments(race)
+        self.validateLaneAssignments(race)
+
+#         print('swapee1={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=run_seq).runplace_set.get(lane=lane)))
+#         print('swapee2={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=swapee2_run_seq).runplace_set.get(lane=lane)))
+        self.assertTrue(swapee2_racer_id == Run.objects.filter(race_id=race.id).get(run_seq=run_seq).runplace_set.get(lane=lane).racer.id)
+        
+#         print('swapee1_racer.id={}'.format(swapee1_racer.racer_id))
+#         print('rhs={}'.format(Run.objects.filter(race_id=race.id).get(run_seq=swapee2_run_seq).runplace_set.get(lane=lane).racer.id))
+#         print('swapee1_racer={}'.format(swapee1_racer))
+        self.assertTrue(swapee1_racer.racer_id == Run.objects.filter(race_id=race.id).get(run_seq=swapee2_run_seq).runplace_set.get(lane=lane).racer.id)
+
+    def testSwapRacers_basic_partialrun(self):
+#         swapRacers(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
+        name='testSwapRacers_basic_partialrun'
+        print('Enter %s'%name)
+
+    def testSwapsWithReseeds(self):
+        name='testSwapsWithReseeds'
+        print('Enter %s'%name)
+        # Swap two cars
+        # Add a car
+        # Reseed
+        # Swap two cars
+        # Add two cars
+        # Swap two sets of cars
+        # Add 5 cars
 
     def testGetRaceResults_NotStarted(self):
         name='testGetRaceResults_NotStarted'
@@ -253,7 +309,7 @@ class EventManagerTestSuite(django.test.TestCase):
         self.rm.seedRace(race, group)
 
         have_racers = False
-        for racer in Run.objects.all().filter(race_id=race.id):
+        for racer in Run.objects.filter(race_id=race.id):
             print('racer={0}', racer)
             have_racers = True
         self.assertTrue(have_racers, 'Run haz no Racers :-(')
@@ -357,10 +413,17 @@ class EventManagerTestSuite(django.test.TestCase):
     
         # Now go back and count everything
         for lane in range(1, race.lane_ct+1):
+            racer_list = ''
             self.assertTrue(len(lane_dict[lane-1]) == len(race.run_set.all()), '{0} != {1}'.format(len(lane_dict[lane-1]), len(race.run_set.all())))
+            print('Lane {0} has {1} entries, unique by racer.id'.format(lane, len(lane_dict[lane-1])))
+#             for n in lane_dict[lane-1]:
+#                 racer_list += str(lane_dict[lane-1][n])
+#                 racer_list += ', '
+#             print(racer_list)
 
         for run in race.runs():
             self.assertTrue(len(seq_dict[run.run_seq]) == race.lane_ct, '{0} != {1}'.format(len(seq_dict[run.run_seq]), race.lane_ct))
+            print('Run.run_seq {0} has {1} entries (lanes)'.format(run.run_seq, len(seq_dict[run.run_seq])))
     
         print('Validation complete')
 

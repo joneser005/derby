@@ -60,8 +60,8 @@ class GroupAdmin(admin.ModelAdmin):
     filter_horizontal = ('racers',)
     readonly_fields = ('id',)
     fields = ['name', 'racers']
-    list_display = ['id', 'name', 'stamp']
-    list_display_links = ['id', 'name', 'stamp']
+    list_display = ['id', 'name', 'count', 'stamp']
+    list_display_links = ['id', 'name', 'count', 'stamp']
 
 class DerbyEventAdmin(admin.ModelAdmin):
     list_display = ['id', 'event_name', 'event_date']

@@ -3,6 +3,7 @@ import logging
 import random
 
 from django.db import connections
+from django.db import transaction
 
 from models import DerbyEvent, Race, Racer, RacerName, Run, Group, Current
 
@@ -79,6 +80,8 @@ class EventManager:
             # One Run per Racer equates to one RunPlace per Racer+Lane
             random.seed()
             log.debug('racers.count()={0}, race')
+            # TODO: Test racer ct <= lane ct
+            #offsets = random.sample(range(0, racers.count()), min(racers.count(), race.lane_ct))
             offsets = random.sample(range(0, racers.count()), race.lane_ct)
             for off in offsets:
                 log.debug('offset: {0}'.format(off))
@@ -98,13 +101,17 @@ class EventManager:
     
             # Create the Run and RunPlace records based on above
             log.debug('Creating Run and RunPlace records.....')
+            lane_header = '  Lane #'
+            lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))
+            log.info(lane_header)
+            lane_header = '-----'.join(' '.format(y) for y in range(lane+1))
+            log.info('        ' + lane_header)
             for seq in range(1, racers.count()+1):
                 run = race.run_set.create(run_seq=seq)
                 seedTableRow = 'Run #{0}: '.format(seq)
                 for lane in range(1, race.lane_ct+1):
                     run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
                     seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
-                seedTableRow += '\n'
                 log.debug(seedTableRow)
         else:
             # REFACTOR: Move to new function, reseedRace
@@ -138,8 +145,6 @@ class EventManager:
                 log.debug('len(new_racers)={0}'.format(len(new_racers)))
 
                 # REFACTOR: Patch in the new Racers 
-                log.warn('TODO: Add support for removing Racers')
-                #TODO: Add support for removing Racers
                 for new_racer in new_racers:
                     new_run = race.run_set.create(run_seq=race.run_set.count()+1)  # run_seq is one-based
                     first_runseq_swap = race.run_set.count() - (race.lane_ct-1)
@@ -160,75 +165,40 @@ class EventManager:
                     new_run.runplace_set.create(run=new_run, racer=new_racer, lane=race.lane_ct)  # last lane, goes with #REFNOTE1....., above 
         # END reseed
 
-    def seedRaceOLD(self, race, race_group):
-        ''' Create placeholder Run+RunPlace records in sequential order.
-        Also call this if we get new racers after the Race has started, noting it will
-        fail if there are not at least lane_ct-1 Runs left open.
-        '''
-        if not isinstance(race_group, Group):
-            raise 'Old usage found!  Fix it!!'
-
-        racers = race_group.racers
-        race.racer_group = race_group
-        start_seq = 1 # for a given Race, each Run is numbered in sequence
-        log.debug('seedRace(race, racers), racers.count()={0}'.format(racers.count()))
-
-        # TODO BEGIN REFACTOR into separate method
-        if 0 < race.run_set.count():
-            old_racer_count = race.run_set.count()
-            if old_racer_count == racers.count():
-                log.warn('seedRace has nothing to do!  old_racer_count == racers.count() == {0}'.format(old_racer_count))
-                return
-
-            runs = self.getRunsCompleted(race)
-            if runs != None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct:
-                msg = 'Cannot re-seed race {3} - we are too far into the race!  runs.count() = {0}, race.run_set.count() = {1}, race.lane_ct = {2}'.format(
-                    runs.count(), race.run_set.count(), race.lane_ct, race)
-                log.warn(msg)
-                raise RaceAdminException(msg)
-            else:
-                diff = racers.count() - old_racer_count
-                log.debug('seedRace reseed Racer count diff is {0}'.format(diff))
-                # Prepare for reseed in cases where racers.count() went up or down since last reseed
-                if 0 < diff:    # Adding Racers
-                    # Remove the last lane_ct-1 Runs
-                    delete_ct = race.lane_ct - 1
-                else:   # Removing Racers (the equality case is earlier in this method)
-                    # Remove the last lane_ct + (diff-1) Runs, new start_seq = 
-                    delete_ct = race.lane_ct - 1 + abs(diff)
-
-                # Delete last lane_ct-1 Runs
-                for r in Run.objects.filter(race=race).order_by('-id')[:delete_ct]:
-                    log.debug('Deleting Run.run_seq={0}'.format(r.run_seq))
-                    r.delete()                 # This will also delete the associated RunPlace records
-                log.info('seedRace deleted {0} existing Run records.'.format(delete_ct))
-
-                start_seq = old_racer_count - delete_ct + 1
-        # TODO END REFACTOR into separate method
+    def swapRacers(self, race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
+        ''' Swaps a pair of RunSequence => Racer assignments '''
+        log.debug('ENTER swapRacers')
+        log.debug('Args: race_id=[{}], run_seq_1=[{}], racer_id_1=[{}], run_seq_2=[{}], racer_id_2=[{}], lane=[{}]'.format(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane))
+        run1 = Run.objects.get(race_id=race_id, run_seq=run_seq_1)
+        rp1 = run1.runplace_set.get(lane=lane)
+        run2 = Run.objects.get(race_id=race_id, run_seq=run_seq_2)
+        rp2 = run2.runplace_set.get(lane=lane)
+        assert(rp2.seconds == None), "rp2.seconds is not None!"
+        # Not checking rp1, in case we have a situation where we are re-running a race, which is entirely possible if we have to swap racers on the fly (e.g. fell off the track)
+        assert(rp1.racer != rp2.racer), "Cannot swap the same Racer!"
  
-        log.info('seedRace start_seq = {0}'.format(start_seq))
-
-        # TODO: Refactor this logic over to a separate fn, then pass in as a parameter
-        # TODO: Then, implement true-random race groupings
-        # Create Run and RunPlace records
-        # One Run per Racer equates to one RunPlace per Racer+Lane
-        racers_array = racers.all()[:]
-        for seq in range(start_seq, racers.count()+1):
-#             log.debug('Racer #{0}'.format(seq))
-            run = race.run_set.create(run_seq=seq)
-            for lane in range(1, race.lane_ct+1):
-#                 log.debug('    Lane #{0}'.format(lane))
-                racerIndex = seq + lane -2 # both values are one-based, so subtract 2
-                while racerIndex >= racers.count():
-                    racerIndex -= racers.count();
-#                 log.debug('racerIndex={0}, lane={1}, seq={2}'.format(racerIndex, lane, seq))
-                run.runplace_set.create(run=run, racer=racers_array[racerIndex], lane=lane)
-        log.debug('Run count = {0}'.format(racers.count()))
+        with transaction.atomic():
+            tempRacer = rp1.racer
+     
+            rp1.racer = rp2.racer
+            rp1.seconds = None
+            rp1.dnf = 0
+            rp1.stamp = datetime.datetime.now()
+            rp1.save()
+     
+            rp2.racer = tempRacer
+            rp2.seconds = None
+            rp2.dnf = 0
+            rp2.stamp = datetime.datetime.now()
+            rp2.save()
+            log.info('Racer swap saved for lane [{}].  run_seq[{}]/racer_id[{}] <=> run_seq[{}]/racer_id[{}]'.
+                     format(lane, run_seq_1, racer_id_1, run_seq_2, racer_id_2))
+        log.debug('EXIT swapRacers')
 
     def getRaceResultsCursor(self, race):
         ''' DNFs - rerun the Run '''
         cur = connections['default'].cursor()
-        cur.execute('''select rp.racer_id as racer_id, racer.name as racer_name,
+        cur.execute(''' select rp.racer_id as racer_id, racer.name as racer_name,
 person.name_first, person.name_last, person.rank,
 avg(rp.seconds) as average, 
 sum(case when rp.seconds > 0 or dnf = 1 /*is not null or rp_dnf = 1*/ then 1 else 0 end) as count
@@ -253,39 +223,73 @@ order by avg(rp.seconds)''', [race.id])
             place += 1
         return output
 
-    def getSwapCandidatesCursor(self, run_seq, lane):
+    def getSwapCandidatesCursor(self, run_seq, lane, swapee_racer_id):
+        '''
+        This query returns a list of Racers that are scheduled to run on the
+        same lane in a later Run (not-yet-completed run, that is) where the
+        candidate is not already in the swapees Run and the swapee is not 
+        already in the candidates's Run.
+        '''
         cur = connections['default'].cursor()
-        cur.execute('''select rp.racer_id as racer_id, run.run_seq as run_seq, r.name as name, r.picture as img_url, p.rank as rank
+        sql = '''select rp.racer_id as racer_id, run.run_seq as run_seq, r.name as name, r.picture as img_url, p.rank as rank
 from runner_runplace rp
 join runner_run run on run.id = rp.run_id
 join runner_current c on c.race_id = run.race_id
 join runner_racer r on r.id = rp.racer_id
 join runner_person p on p.id = r.person_id
 where run.race_id = c.race_id
-  and rp.lane = %s
+  and rp.lane = {0}
   and run.run_completed = 0
   and rp.seconds is null /* redundant/safety */
   and rp.racer_id not in (select rp2.racer_id
                             from runner_runplace rp2
                             join runner_run run2 on (run2.id = rp2.run_id)
-                           where run2.run_seq = %s)''',
-            [lane, run_seq])
+                           where run2.run_seq = {1})
+  and {2} not in (select rp3.racer_id
+                from runner_runplace rp3
+                where rp3.run_id = rp.run_id) '''.format(lane, run_seq, swapee_racer_id)
+#         print(sql)
+        cur.execute(sql)
+#         cur.execute('''select rp.racer_id as racer_id, run.run_seq as run_seq, r.name as name, r.picture as img_url, p.rank as rank
+# from runner_runplace rp
+# join runner_run run on run.id = rp.run_id
+# join runner_current c on c.race_id = run.race_id
+# join runner_racer r on r.id = rp.racer_id
+# join runner_person p on p.id = r.person_id
+# where run.race_id = c.race_id
+#   and rp.lane = %s
+#   and run.run_completed = 0
+#   and rp.seconds is null /* redundant/safety */
+#   and rp.racer_id not in (select rp2.racer_id
+#                             from runner_runplace rp2
+#                             join runner_run run2 on (run2.id = rp2.run_id)
+#                            where run2.run_seq = %s)
+#   and %s not in (select rp3.racer_id
+#                 from runner_runplace rp3
+#                 where rp3.run_id = rp.run_id) ''',
+#             [lane, run_seq, swapee_racer_id])
         return cur
 
-    def getSwapCandidatesList(self, run_seq, lane):
+    def getSwapCandidatesList(self, run_seq, lane, swapee_racer_id):
         '''
-        Returns a list of race swap candidates ({ racer_id: x, run_seq: y}).  Valid candidates must
-        have not yet raced in the given lane and must not be in the current run.
+        Returns a list of race swap candidates ({ racer_id: x, run_seq: y}).  Valid candidates:
+            1) must have not yet raced in the given lane
+            2) must not be in the current/swapee's Run
+            3) Swapee must not be in the candidate's Run
         [ { racer_id: x, run_seq: y, name: a, img_url: b, rank: c } 
         . . .
         ]
         '''
-        cur = self.getSwapCandidatesCursor(run_seq, lane)
+        log.debug('ENTER getSwapCandidatesList(run_seq={}, lane={}, swapee_racer_id={})'.format(run_seq, lane, swapee_racer_id))
+        cur = self.getSwapCandidatesCursor(run_seq, lane, swapee_racer_id)
+        print('cur={}'.format(cur))
         desc = cur.description
+        print('cur.description={}'.format(cur.description))
         result = [
             dict(zip([col[0] for col in desc], row))
             for row in cur.fetchall()
         ]
+        log.debug('EXIT getSwapCandidatesList')
         return result
 
     def getRaceStandingsDict(self, race):
@@ -334,7 +338,7 @@ where run.race_id = c.race_id
             result['runs'].append(run_record);
 
         # Add current race stats if this race is the Current:
-        current = Current.objects.all()[0];
+        current = Current.objects.all()[0]
         if None != current and current.race.id == race.id:
             result['current_run_id'] = current.run.id
             result['current_run_seq'] = current.run.run_seq
@@ -356,16 +360,6 @@ where run.race_id = c.race_id
         else:
             curr_seq = 0
         return curr_seq, run_count
-
-    def getEligibleRacersForSwap(self, race, run_id, lane):
-        ''' Returns list of racers that are not in the given run(_id) and have not yet run in the given lane. '''
-        # TODO
-        pass
-
-    def swapRacers(self, race, lane, run_id_a, racer_id_a, run_id_b, racer_id_b):
-        ''' Both of these together are intentionally redundant: run_id_a/b <=> racer_id_a/b '''
-        # TODO
-        pass
 
     def isRaceComplete(self, race):
         return race.run_set.count() == race.run_set.filter(run_completed__exact=True).count()
@@ -393,6 +387,9 @@ where run.race_id = c.race_id
         print(run)
 
     def assignRandomRacerNames(self):
+        ''' Applies a random name to every Racer.
+        TODO: Change this to only apply to Racers with empty/null names.
+        '''
         name_pool = RacerName.objects.order_by('?')
         name_ind = 0
         for racer in Racer.objects.all():

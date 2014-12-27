@@ -78,6 +78,9 @@ class Group(models.Model):
     name = models.CharField(max_length=50, unique=True) 
     stamp = models.DateTimeField(auto_now=True)
     racers = models.ManyToManyField(Racer, blank=True, null=True)
+    
+    def count(self):
+        return self.racers.count()
 
     def __unicode__(self):
         return self.name 
@@ -89,7 +92,7 @@ class Race(models.Model):
     name = models.CharField(max_length=200)
     lane_ct = models.PositiveIntegerField()
     stamp = models.DateTimeField(auto_now=True)
-    level = models.PositiveIntegerField(choices=[(1,'Heats'), (2,'Finals'), (3,'Open Division')])  # FIXME: Conceptually, this isn't right (in python, defaults are evaluated only once), should probably be ok in this context, though
+    level = models.PositiveIntegerField(choices=[(1,'Heats'), (2,'Finals'), (3,'Open Division'), (4, 'Practice')])
 
     def runs(self):
         for run in self.run_set.all().order_by('run_seq'):
@@ -111,7 +114,7 @@ class Run(models.Model):
             yield rp
 
     def __unicode__(self):
-        return 'Race:Level:Run [run_completed] = {0}:{1}:{2} [{3}]'.format(self.race, self.race.level, self.run_seq, self.run_completed)
+        return 'Race:{0}(^{1})  Run #{2}  {3}'.format(self.race, self.race.level, self.run_seq,'(complete)' if self.run_completed else '')
 
     class Meta:
         ordering = ['pk', 'run_seq']
@@ -145,11 +148,10 @@ class RunPlace(models.Model):
         return n
 
     class Meta:
-        # ordering = ['pk', 'lane'] # this should really be run.run_seq, lane
-        ordering = ['run__run_seq', 'lane']
+        ordering = ['run__race__id', 'run__run_seq', 'lane']
 
     def __unicode__(self):
-        return '[Run]:[Racer]:seconds = [{0}]:[{1}]:{2}{3}'.format(self.run, self.racer, self.seconds, ' (DNF)' if self.dnf else '')
+        return '{0}  lane #{1},  Racer: {2}  Time: {3}'.format(self.run, self.lane, self.racer, ' (DNF)' if self.dnf else self.seconds)
 
 class Current(SingletonModel):
     race = models.ForeignKey(Race)
