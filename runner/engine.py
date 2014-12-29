@@ -85,13 +85,18 @@ class EventManager:
         if 0 == race.run_set.count():
             # REFACTOR: Move to new function, seedNewRace
             # Fresh race
-            log.info('Seeding a new race.....')
+            log.info('Seeding a new race for {0} racers.....'.format(racers.count()))
 
             # Create Run and RunPlace records
             # One Run per Racer equates to one RunPlace per Racer+Lane
             random.seed()
-            log.debug('racers.count()={0}, race')
+
+            
+            
+            
             # TODO: Test racer ct <= lane ct
+            
+            
             #offsets = random.sample(range(0, racers.count()), min(racers.count(), race.lane_ct))
             offsets = random.sample(range(0, racers.count()), race.lane_ct)
             for off in offsets:

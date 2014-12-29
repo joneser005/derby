@@ -116,7 +116,7 @@ class EventManagerTestSuite(django.test.TestCase):
 
         racer_ct = 5
         group = getNewRacerGroup(racer_ct)
-        
+
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
@@ -130,15 +130,17 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print('===== SeedRace #2.2 (reseed virgin +1 Racer)') # Expect log event saying nothing to do
         racer_ct = race.run_set.count() + 1
-        group.racers.add(Racer.objects.get(pk=racer_ct))
+        num_to_add = 1
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #2.2 (reseed virgin +5 Racer)') # Expect log event saying nothing to do
-        for i in range(1,6): group.racers.add(Racer.objects.get(pk=racer_ct+i))
         racer_ct = race.run_set.count() + 5
+        num_to_add = 5
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
@@ -153,17 +155,17 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print('===== SeedRace #3.1 (reseed partial +1 Racer)')
         racer_ct = race.run_set.count() + 1
-        group.racers.add(Racer.objects.get(pk=racer_ct))
+        num_to_add = 1
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #3.2 (reseed partial +2 Racers)')
-        racer_ct = race.run_set.count() + 1
-        group.racers.add(Racer.objects.get(pk=racer_ct))
-        racer_ct = race.run_set.count() + 1
-        group.racers.add(Racer.objects.get(pk=racer_ct))
+        racer_ct = race.run_set.count() + 2
+        num_to_add = 2
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
@@ -171,8 +173,9 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print('===== SeedRace #3.5 (reseed partial +7 Racers)')
         printLaneAssignments(race)
-        for i in range(1,8): group.racers.add(Racer.objects.get(pk=racer_ct+i))
         racer_ct = race.run_set.count() + 7
+        num_to_add = 7
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
@@ -193,7 +196,8 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print('===== SeedRace #4.2 (completed, with +1 Racers)')
         racer_ct = race.run_set.count() + 1
-        group.racers.add(Racer.objects.get(pk=racer_ct))
+        num_to_add = 1
+        group = addRacersToRacerGroup(group, num_to_add)
         self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
 
         print('Exit %s'%name)
@@ -244,30 +248,25 @@ class EventManagerTestSuite(django.test.TestCase):
         self.validateLaneAssignments(race)
 
         num_to_add = 2
-        pool = Racer.objects.exclude(id__in=group.racers.all().values_list('id', flat=True))
-
-        group = addRacersToRacerGroup(group, pool, num_to_add)
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         num_to_add = 1
-        print('!!!!! group={0}'.format(group))
-        group = addRacersToRacerGroup(group, pool, num_to_add)
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
  
         num_to_add = 1
-        print('!!!!! group={0}'.format(group))
-        group = addRacersToRacerGroup(group, pool, num_to_add)
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
  
         num_to_add = 5
-        print('!!!!! group={0}'.format(group))
-        group = addRacersToRacerGroup(group, pool, num_to_add)
+        group = addRacersToRacerGroup(group, num_to_add)
         self.rm.seedRace(race, group)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
@@ -458,13 +457,13 @@ class EventManagerTestSuite(django.test.TestCase):
 
         for lane in range(1, race.lane_ct+1):
             racer_list = ''
-            print('::::: lane={0}, lane_dict[lane-1]={1}, race.run_set.all()={2}'.format(lane, lane_dict[lane-1], race.run_set.all()))
+#             print('::::: lane={0}, lane_dict[lane-1]={1}, race.run_set.all()={2}'.format(lane, lane_dict[lane-1], race.run_set.all()))
             self.assertTrue(len(lane_dict[lane-1]) == len(race.run_set.all()), '{0} != {1}'.format(len(lane_dict[lane-1]), len(race.run_set.all())))
 #             print('Lane {0} has {1} entries, unique by racer.id'.format(lane, len(lane_dict[lane-1])))
             for n in lane_dict[lane-1]:
                 racer_list += str(lane_dict[lane-1][n])
                 racer_list += ', '
-            print('lane {0} racers: {1}'.format(lane, racer_list))
+#             print('lane {0} racers: {1}'.format(lane, racer_list))
 
         print('Validation complete')
 
@@ -474,8 +473,9 @@ def getNewRacerGroup(racer_ct):
         group.racers.add(racer)
     return group
 
-def addRacersToRacerGroup(group, pool, num_to_add):
-    print('pool={0}'.format(pool))
+def addRacersToRacerGroup(group, num_to_add):
+    pool = Racer.objects.exclude(id__in=group.racers.all().values_list('id', flat=True))
+#     print('pool={0}'.format(pool))
     toadd = random.sample(pool, num_to_add)
     print('num_to_add={0}, toadd={1}'.format(num_to_add, toadd))
     for x in toadd:
