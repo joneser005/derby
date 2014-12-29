@@ -5,11 +5,18 @@ import random
 from django.db import connections
 from django.db import transaction
 
-from models import DerbyEvent, Race, Racer, RacerName, Run, Group, Current
+from models import DerbyEvent, Race, Racer, RacerName, Run, RunPlace, Group, Current
 
 log = logging.getLogger('runner')
 
 class RaceAdminException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+class ReseedRaceException(Exception):
     def __init__(self, value):
         self.value = value
 
@@ -65,9 +72,13 @@ class EventManager:
         Think of the wheels on a combination lock.
         Each 'wheel' must feature a different Racer for the first Run....
         .... thereby guaranteeing no Run features the same racer in two lanes (impossible!)
+        
+        Constraints:
+            1) Race cannot have more lanes than racers.  Use fewer lanes.
+            2) In the case of #1, if racers are added later (and not sure that is even possible), they
+            will continue to use the same number of lanes defined for the race.
         '''
         racers = race_group.racers
-        race.racer_group = race_group
         start_seq = 1 # for a given Race, each Run is numbered in sequence
         log.debug('seedRace(race, racers), racers.count()={0}'.format(racers.count()))
 
@@ -113,6 +124,8 @@ class EventManager:
                     run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
                     seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
                 log.debug(seedTableRow)
+
+            log.info('Done seeding new race.')
         else:
             # REFACTOR: Move to new function, reseedRace
             runs = self.getRunsCompleted(race)
@@ -121,49 +134,60 @@ class EventManager:
                     runs.count(), race.run_set.count(), race.lane_ct, race)
                 log.warn(msg)
                 raise RaceAdminException(msg)
-            else:
-                diff = racers.count() - race.run_set.count()
 
-                # REFACTOR: Find the new Racers
-                new_racers = []
-                for racer in racers.all():
-#                     print(dir(racer))
-                    found = False
-#                     race.run_set.filter()
-                    for run in race.run_set.all():
-                        for rx in run.runplace_set.all():
-                            if (rx.racer.id == racer.id):
-                                found = True
-#                                 log.debug('Found racer {0}'.format(racer))
-                                break;
-                        if found: break
-                    if not found:
-                        new_racers.append(racer)
-                        log.debug('Added new racer {0}'.format(racer))
-                if len(new_racers) == len(race.racer_group.racers.all()):
-                    raise 'Failed to identify new racers!'
-                log.debug('len(new_racers)={0}'.format(len(new_racers)))
+            diff = racers.count() - race.run_set.count()
+            print('(((((race.racer_group.racers.count()={0})))))'.format(race.racer_group.racers.count()))
+            if (0 < diff):
+                log.info('Reseeding existing race with {0} additional Racers.'.format(diff))
+                # Race.racer_group and arg race_group can be the same (so assume they are)
+                print(';;;;; race.run_set.all()={0}'.format(race.run_set.all()))
+                existing_racers = RunPlace.objects.filter(run__race=race).values_list('racer_id').distinct() 
+                print('----- existing_racers={0}'.format(existing_racers))
+                new_racers = Racer.objects.filter(id__in=race_group.racers.values_list('id')).exclude(id__in=existing_racers)
+                print('new_racers={0}'.format(new_racers))
+                if diff != len(new_racers):
+                    raise RaceAdminException('Expected {0} new Racers, found {1}!'.format(diff, len(new_racers)))
+                if 0 == len(new_racers):
+                    raise RaceAdminException('No new Racers found!')
+                log.info('Found {0} new Racers.'.format(len(new_racers)))
 
-                # REFACTOR: Patch in the new Racers 
+                # REFACTOR: Patch in the new Racers
                 for new_racer in new_racers:
-                    new_run = race.run_set.create(run_seq=race.run_set.count()+1)  # run_seq is one-based
-                    first_runseq_swap = race.run_set.count() - (race.lane_ct-1)
-                    lane = 1
-                    for swap_run in race.run_set.filter(run_seq__gte=first_runseq_swap):
-                        print('lane={}'.format(lane))
-                        swap_rp = swap_run.runplace_set.filter(lane__exact=lane)
-                        swap_rp = swap_rp[0]
-#                         swap_rp = swap_run.runplace_set.get(lane__exact=lane)  # DoesNotExist: RunPlace matching query does not exist.
-                        swap_racer = swap_rp.racer
-                        print('SWAP runseq[{0}], lane[{1}]: swap_racer={2} <==> new_racer={3} '.format(swap_run.run_seq, lane, swap_racer, new_racer))
-                        new_run.runplace_set.create(run=new_run, racer=swap_racer, lane=lane)
-                        swap_rp.racer=new_racer
-                        swap_rp.save()
-                        lane += 1
-                        if lane >= race.lane_ct:
-                            break;
-                    new_run.runplace_set.create(run=new_run, racer=new_racer, lane=race.lane_ct)  # last lane, goes with #REFNOTE1....., above 
+                    with transaction.atomic():
+                        log.warn('TODO: Wrap this code to patch in new racers (reseed) in a transaction')
+                        chewed_runs = []  # a 'chewed' Run or Racer is one that has been moved around to make room for the current Racer being patched in.
+                        chewed_racers = []
+    #                     print('*****run_pool_by_lane={0}'.format(run_pool_by_lane))
+                        new_run = race.run_set.create(run_seq=race.run_set.count()+1)  # run_seq is one-based 
+                        for lane in range(1, race.lane_ct+1):
+                            for orig_run in race.run_set.filter(run_completed=False):
+                                if orig_run == new_run: continue
+    #                             print('11111 orig_run={0}'.format(orig_run))
+                                if orig_run.run_seq in chewed_runs: continue
+                                
+    #                             print('22222 orig_run.runplace_set.get(lane=lane)={0}'.format(orig_run.runplace_set.get(lane=lane)))
+                                
+                                orig_racer = Racer.objects.get(id=orig_run.runplace_set.filter(lane=lane).values('racer__id'))
+    #                             print('33333 orig_racer={0}'.format(orig_racer))
+                                if orig_racer.id in chewed_racers: continue
+    
+                                # Patch in the new Racer here
+                                orig_rp = orig_run.runplace_set.get(lane=lane)
+                                orig_rp.racer = new_racer
+                                orig_rp.save()
+                                new_run.runplace_set.create(run=new_run, racer=orig_racer, lane=lane)
+                                new_run.save()
+                                log.info('Patched new Racer.id={0} at run_seq={1}, lane={2}.'.format(new_racer.id, orig_run.run_seq, lane))
+                                log.info('Moved orig Racer.id={0} to run_seq={1}, lane={2}.'.format(orig_racer.id, new_run.run_seq, lane))
+    
+                                chewed_racers.append(orig_racer.id)
+                                chewed_runs.append(orig_run.run_seq)
+                                break
+                log.info('Done reseeding existing race with {0} additional Racers.'.format(diff))
+            else:
+                log.info('Nothing to do!')
         # END reseed
+        race.racer_group = race_group
 
     def swapRacers(self, race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
         ''' Swaps a pair of RunSequence => Racer assignments '''
@@ -282,9 +306,9 @@ where run.race_id = c.race_id
         '''
         log.debug('ENTER getSwapCandidatesList(run_seq={}, lane={}, swapee_racer_id={})'.format(run_seq, lane, swapee_racer_id))
         cur = self.getSwapCandidatesCursor(run_seq, lane, swapee_racer_id)
-        print('cur={}'.format(cur))
+#         print('cur={}'.format(cur))
         desc = cur.description
-        print('cur.description={}'.format(cur.description))
+#         print('cur.description={}'.format(cur.description))
         result = [
             dict(zip([col[0] for col in desc], row))
             for row in cur.fetchall()
