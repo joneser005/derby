@@ -46,7 +46,7 @@ class Racer(models.Model):
     person = models.ForeignKey(Person)
     name = models.CharField(max_length=200, unique=True,blank=True, null=True)     # e.g. "Red Rider"
     name_choice = models.ForeignKey(RacerName,blank=True, null=True, verbose_name="name suggestions") # HACK: Used to display a small random set of suggested racer names
-    picture = models.ImageField(upload_to='racers', blank=True, null=True)
+    picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)
 
     def image_tag_100(self):

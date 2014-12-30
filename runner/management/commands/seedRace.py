@@ -7,7 +7,7 @@ log = logging.getLogger('runner')
 
 class Command(BaseCommand):
     args = '{race_id} {group_id}'
-    help = 'Seeds or reseeds a Race using a RaceGroup'
+    help = 'Seeds or reseeds a Race using a RaceGroup, combo-tumbler format'
 
     def handle(self, *args, **options):
         if len(args) >= 2:

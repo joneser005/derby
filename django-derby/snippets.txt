@@ -10,6 +10,8 @@ python manage.py collectstatic
 python manage.py seedRace 1 1
 idle-python2.7 -r manage.py shell
 python manage.py test runner --traceback
+
+python manage.py test runner.tests.EventManagerTestSuite
 python manage.py test runner.tests.EventManagerTestSuite.testSeedRaceExisting
 python manage.py dumpdata --format=json --indent=4 > runner/fixtures/all.json
 

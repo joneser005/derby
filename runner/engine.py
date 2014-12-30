@@ -96,14 +96,20 @@ class EventManager:
             
             # TODO: Test racer ct <= lane ct
             
-            
-            #offsets = random.sample(range(0, racers.count()), min(racers.count(), race.lane_ct))
+            if racers.count() < race.lane_ct:
+                log.warn('Racer count ({0}) less than Race lane_ct ({1}.  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
+                race.lane_ct = min(racers.count(), race.lane_ct)
+                race.save()
+
             offsets = random.sample(range(0, racers.count()), race.lane_ct)
             for off in offsets:
                 log.debug('offset: {0}'.format(off))
             racers_array = racers.all()[:]
             lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
             for lane in range(1, race.lane_ct+1):
+                if lane > len(racers_array):
+                    log.info('Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(lane, race.lane_ct))
+                    break 
                 log.debug('Creating Lane Tumbler #{0}'.format(lane))
                 tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
                 for seq in range(start_seq, racers.count()+1):  # seq is one-based 

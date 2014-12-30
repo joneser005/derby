@@ -44,6 +44,7 @@ class EventManagerTestSuite(django.test.TestCase):
         return race, group, curr
 
     def completeRuns(self, race, runs_to_complete):
+        if 0 >= runs_to_complete: return
         print('completeRuns: runs_to_complete={0}'.format(runs_to_complete))
         curr = Current.objects.all()[0]
         starttime = clock()
@@ -273,22 +274,6 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print('EXIT {0}'.format(name))
 
-    def testSwapRacers_basic_partialrun(self):
-#         swapRacers(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
-        name='testSwapRacers_basic_partialrun'
-        print('Enter %s'%name)
-
-    def testSwapsWithReseeds(self):
-        name='testSwapsWithReseeds'
-        print('Enter %s'%name)
-        # Swap two cars
-        # Add a car
-        # Reseed
-        # Swap two cars
-        # Add two cars
-        # Swap two sets of cars
-        # Add 5 cars
-
     def testGetRaceResults_NotStarted(self):
         name='testGetRaceResults_NotStarted'
         print('Enter %s'%name)
@@ -329,6 +314,15 @@ class EventManagerTestSuite(django.test.TestCase):
 
         print(self.rm.getRaceStandings(race))
         print('Exit %s'%name)
+
+    def testSmallRace(self, name='testSmallRace'):
+        print('ENTER {0}'.format(name))
+        lane = 6
+        racer_ct = 4
+        race, group, curr = self.setupRace(name, lane, racer_ct, 0)
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
+        printLaneAssignments(race)
+        self.validateLaneAssignments(race)
 
     def testRacerSort(self):
         last_id = 0
@@ -531,6 +525,8 @@ def printLaneAssignments(race):
     print('racer_ids={0}'.format(racer_ids))
     mx = len(str(max(racer_ids)))
     outlinearr = ['          ' for x in range(mx)]  # each entry is a line to print, used for vertical race.id printing
+    outlinearr[0] = 'Racer ID: '
+
     for id in racer_ids:
         x = str((10**mx) + id)[::-1]
         for i in range(mx):

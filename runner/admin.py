@@ -38,11 +38,11 @@ class RacerAdminForm(forms.ModelForm):
 
 class RacerAdmin(admin.ModelAdmin):
     form = RacerAdminForm 
-    fields = ['person', 'rank', 'name_choice', 'name', 'picture', 'image_tag_20']
+    fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag_20']
     list_display = ['id', 'person', 'rank', 'name', 'image_tag_20']
     list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_20']
     list_filter = ('person__rank',)
-    readonly_fields = ('rank', 'image_tag_20',)
+    readonly_fields = ('id', 'rank', 'image_tag_20',)
 
     def rank(self, obj):
         return obj.person.rank
