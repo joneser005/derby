@@ -147,12 +147,14 @@ def jsonDefaultHandler(obj):
 
     raise TypeError(repr(obj) + " is not JSON serializable")
 
-def getData(request, race_id, name, nocache=False):
+def getData(request, race_id, name, nocache):
     ''' (Django view) Returns status or standings data for given race as JSON.
     name = standings or status.
     If the Current table's stamp is NOT newer than the cache key's stamp and
     the cache is not expired, data is pulled from the cache, not the database. '''
     log.debug('Entering getData(request, race_id={}, name={})'.format(race_id, name))
+    if None == nocache:
+        nocache = False
     CACHE_TIMEOUT_SECS = 30
     key_stamp = name + '_stamp'
     key_data = name + '_json'
@@ -193,7 +195,7 @@ def getData(request, race_id, name, nocache=False):
 
 def getStatusData(request, race_id):
     log.debug('Entered/exiting getStatusData')
-    result = getData(request, race_id, 'status')
+    result = getData(request, race_id, 'status', nocache=False)
     return HttpResponse(result)
 
 def getStatusDataNoCache(request, race_id):
@@ -203,7 +205,7 @@ def getStatusDataNoCache(request, race_id):
 
 def getStandingsData(request, race_id):
     log.debug('Entered/exiting getStandingsData')
-    return HttpResponse(getData(request, race_id, 'standings'))
+    return HttpResponse(getData(request, race_id, 'standings', nocache=False))
 
 def getStandingsDataNoCache(request, race_id):
     log.debug('Entered/exiting getStandingsDataNoCache')

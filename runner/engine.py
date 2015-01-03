@@ -110,15 +110,15 @@ class EventManager:
                 if lane > len(racers_array):
                     log.info('Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(lane, race.lane_ct))
                     break 
-                log.debug('Creating Lane Tumbler #{0}'.format(lane))
+#                 log.debug('Creating Lane Tumbler #{0}'.format(lane))
                 tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
                 for seq in range(start_seq, racers.count()+1):  # seq is one-based 
                     racerIndex = seq -1 + offsets[lane-1] # subtract one b/c seq is one-based
                     while racerIndex >= racers.count():
                         racerIndex -= racers.count();
-                    log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
+#                     log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
                     tumbler.append(racers_array[racerIndex])
-                log.debug('lane={0}'.format(lane))
+#                 log.debug('lane={0}'.format(lane))
                 lane_tumbler[lane-1] = tumbler
     
             # Create the Run and RunPlace records based on above
@@ -199,6 +199,7 @@ class EventManager:
                 log.info('Nothing to do!')
         # END reseed
         race.racer_group = race_group
+        race.save()
 
     def swapRacers(self, race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
         ''' Swaps a pair of RunSequence => Racer assignments '''
@@ -407,14 +408,9 @@ where run.race_id = c.race_id
     def runRace(self, race, resultReader):
         print('Starting race {0}'.format(race.name))
         for run in race.run_set.all().order_by('run_seq'):
-#             log.debug('Run #{0}:'.format(run.run_seq))
-#             for rp in run.runplace_set.all().order_by('lane'):
-#                 log.debug('    Lane #{0}: {1}'.format(rp.lane, rp.racer))
-
             keepResult = False
             while (False == keepResult):
                 run, keepResult = resultReader(run)
-
 #             self.printRunResult(run)
 #         self.getRaceResults(race)
 
@@ -423,17 +419,14 @@ where run.race_id = c.race_id
 
     def assignRandomRacerNames(self):
         ''' Applies a random name to every Racer.
-        TODO: Change this to only apply to Racers with empty/null names.
         '''
         name_pool = RacerName.objects.order_by('?')
         name_ind = 0
-        for racer in Racer.objects.all():
-#             while not isValidName(candidate):
+        for racer in Racer.objects.exclude(name__isnull=True).exclude(name__exact=''):
             name_ind += 1
-            candidate = name_pool[name_ind].name
-            print (name_pool[name_ind].name)
-            racer.name = candidate
+            racer.name = name_pool[name_ind].name
             racer.save() 
+            print ('Assigned name "{0}" to Racer #{1}'.format(racer.name, racer.id))
         log.debug('Named {} racers.'.format(name_ind))
 
 def main():

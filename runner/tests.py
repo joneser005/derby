@@ -6,6 +6,7 @@ import django.test
 
 from models import DerbyEvent, Race, Racer, Run, RunPlace, Group, Current
 from engine import EventManager, RaceAdminException
+from reports import Reports
 
 # log = logging.getLogger('runner')
 
@@ -56,7 +57,7 @@ class EventManagerTestSuite(django.test.TestCase):
             print('Artificial result, Run.run_seq={0}, run_completed={1}'.format(run.run_seq, run.run_completed))
             run.save()
             for rp in RunPlace.objects.filter(run_id=run.id):
-                rp.seconds = clock() - starttime
+                rp.seconds = round(3 + random.random() * 3, 3)
                 rp.stamp = datetime.datetime.now()
                 rp.save()
             curr.run.run_seq+=1  # seeding and swapping uses the Current record
@@ -64,6 +65,32 @@ class EventManagerTestSuite(django.test.TestCase):
             x-=1
             if x<1:
                 break
+
+    def testPreraceReport(self):
+        name ='testPreraceReport'
+        print('ENTER {0}', name)
+
+        raceName = 'Report tests race'
+        lane_ct = 6
+        num_racers = 10
+        runs_to_complete = 0
+        race, group, curr = self.setupRace(raceName, lane_ct, num_racers, runs_to_complete)
+        r = Reports()
+        print('prerace():')
+        print(r.prerace(race))
+
+    def testRacerStatsReport(self):
+        name ='testRacerStatsReport'
+        print('ENTER {0}', name)
+        raceName = 'Report tests race'
+        lane_ct = 6
+        num_racers = 25
+        runs_to_complete = 25
+        race, group, curr = self.setupRace(raceName, lane_ct, num_racers, runs_to_complete)
+        r = Reports()
+        racer = group.racers.first()
+        print('testRacerStatsReport(racer={0}):'.format(racer))
+        print(r.racerStats(race.derby_event, racer))
 
     def seedRaceNew(self, lanes):
         name ='testSeedRaceNew'
