@@ -6,4 +6,7 @@ Pinewood Derby Race Manager
 2014-12-20
 ----------
 1) Updated for Django 1.7
-2) Added seedRace2, using a lock tumbler style of competitor assignments.  TODO: Integrate seedRace2 into unit tests :-|
+2) Updated seedRace to use a lock tumbler style of competitor assignments. 
+3) Added race reports
+
+

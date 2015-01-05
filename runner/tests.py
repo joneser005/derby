@@ -1,7 +1,9 @@
 import datetime
-from time import clock
+import pprint
 import random
 from sys import stdout
+from time import clock
+
 import django.test
 
 from models import DerbyEvent, Race, Racer, Run, RunPlace, Group, Current
@@ -37,8 +39,10 @@ class EventManagerTestSuite(django.test.TestCase):
         print('ENTER setupRace(race_name={}, lane_ct={}, num_racers={}, runs_to_complete={})'.format(race_name, lane_ct, num_racers, runs_to_complete))
         de = self.rm.createDerbyEvent(race_name, '2011-02-01')
         race = self.rm.createRace(de, race_name, lane_ct, 1)
-        group = getNewRacerGroup(num_racers)
-        self.rm.seedRace(race, group)
+        race.racer_group = getNewRacerGroup(num_racers)
+        group = race.racer_group  # redundant, needed to feed back to callers vs. refactoring
+        race.save()
+        self.rm.seedRace(race)
         curr = self.setCurrent(race, 1)
         self.completeRuns(race, runs_to_complete)
         print('EXIT setupRace')
@@ -70,7 +74,7 @@ class EventManagerTestSuite(django.test.TestCase):
         name ='testPreraceReport'
         print('ENTER {0}', name)
 
-        raceName = 'Report tests race'
+        raceName = name
         lane_ct = 6
         num_racers = 10
         runs_to_complete = 0
@@ -78,6 +82,22 @@ class EventManagerTestSuite(django.test.TestCase):
         r = Reports()
         print('prerace():')
         print(r.prerace(race))
+
+    def testRaceStatsReport(self):
+        name ='testRaceStatsReport'
+        print('ENTER {0}', name)
+
+        race_name = name
+        lane_ct = 6
+        num_racers = 10
+        runs_to_complete = num_racers
+        print('Simulating race with {0} lanes and {1} racers: {2}'.format(lane_ct, num_racers, race_name))
+        race, group, curr = self.setupRace(race_name, lane_ct, num_racers, num_racers)
+
+        r = Reports()
+        data = r.getRaceStatsDict(race, None)
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(data)
 
     def testRacerStatsReport(self):
         name ='testRacerStatsReport'
@@ -89,87 +109,86 @@ class EventManagerTestSuite(django.test.TestCase):
         race, group, curr = self.setupRace(raceName, lane_ct, num_racers, runs_to_complete)
         r = Reports()
         racer = group.racers.first()
-        print('testRacerStatsReport(racer={0}):'.format(racer))
-        print(r.racerStats(race.derby_event, racer))
+        print('===== testRacerStatsReport(race={0}, racer={1}):'.format(race, racer))
+#         print(r.racerStats(race.derby_event, racer))
+        print(r.getRaceStatsDict(race, racer))
+ 
+        print('===== testRacerStatsReport(race={0}, <all racers>):'.format(race))
+        print(r.getRaceStatsDict(race))
 
-    def seedRaceNew(self, lanes):
-        name ='testSeedRaceNew'
-        print('ENTER {0}, lane_ct={1}', name, lanes)
-        DerbyEvent.objects.filter(event_name=name).delete()
-
-        de = self.rm.createDerbyEvent(name, '2013-02-01')
-        race = self.rm.createRace(de, name, lanes, 1)
-        group = Group.objects.get(id=1)
-        racer_ct = group.racers.count()
-
-        self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
-        self.rm.seedRace(race, group) #using group from fixture data
-        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 
-                        'racer_ct={0}, rhs={1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
-
-        self.assertTrue(race.run_set.count() == racer_ct, 
-                        'Expected race.run_set.count() == {1}.  Actual: {0}'.format(
-                            race.run_set.count(), racer_ct))
-
-        run = race.run_set.order_by('-run_seq')[0] # check last
-        self.assertTrue(run.runplace_set.count() == lanes, 
-                        'Expected run.runplace_set.count() == lanes.  Actual: {0} != {1}'.format(
-                            run.runplace_set.count() , lanes))
-
-        run = race.run_set.order_by('run_seq')[0] # check first
-        self.assertTrue(run.runplace_set.count() == lanes, 
-                        'Expected run.runplace_set.count() == lanes.  Actual: {0} != {1}'.format(
-                            run.runplace_set.count() , lanes))
-        print('EXIT {0}'.format(name))
+#     def seedRaceNew(self, lanes):
+#         name ='testSeedRaceNew'
+#         print('ENTER {0}, lane_ct={1}', name, lanes)
+# 
+#         race, group, curr = self.setupRace(name, lanes, 10, runs_to_complete)
+# 
+#         racer_ct = race.racer_group.racers.count()
+# 
+#         self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
+#         self.rm.seedRace(race)
+#         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 
+#                         'racer_ct={0}, rhs={1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
+# 
+#         self.assertTrue(race.run_set.count() == racer_ct, 
+#                         'Expected race.run_set.count() == {1}.  Actual: {0}'.format(
+#                             race.run_set.count(), racer_ct))
+# 
+#         run = race.run_set.order_by('-run_seq')[0] # check last
+#         self.assertTrue(run.runplace_set.count() == lanes, 
+#                         'Expected run.runplace_set.count() == lanes.  Actual: {0} != {1}'.format(
+#                             run.runplace_set.count() , lanes))
+# 
+#         run = race.run_set.order_by('run_seq')[0] # check first
+#         self.assertTrue(run.runplace_set.count() == lanes, 
+#                         'Expected run.runplace_set.count() == lanes.  Actual: {0} != {1}'.format(
+#                             run.runplace_set.count() , lanes))
+#         print('EXIT {0}'.format(name))
 
     def testSeedRaceExisting(self, name='testSeedRaceExisting'):
         ''' We will not support removing a racer from the races.  This
         becomes difficult to deal with, having Racers running random Runs
         unless we wanted to create just throw out a Racer's results,
         which we can already do manually, if necessary. '''
-        print('Enter %s'%name)
+        print('Enter {}'.format(name))
 
-        de = self.rm.createDerbyEvent(name, '2013-03-01')
-        deid = de.id
-        self.assertTrue(deid > 0)
+        raceName = name
+        lane_ct = 6
+        racer_ct = 10
+        runs_to_complete = 0
+        race, group, curr = self.setupRace(raceName, lane_ct, racer_ct, runs_to_complete)
 
-        # Call it a 2nd time, make sure we get the same DerbyEvent.  This ensures impatient or accidental repeat ops are safe.
-        de = self.rm.createDerbyEvent(name, '2013-03-01')
-        self.assertTrue(deid == de.id)
+        print('===== SeedRace #1, Created new')
+        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count())
 
-        race = self.rm.createRace(de, name, 3, 1)
+        add_ct = 3
+        addRacersToRacerGroup(group, add_ct)
 
-        print('===== SeedRace #1, adding 5 racers')
-        self.assertTrue(0 == Run.objects.filter(race_id=race.id).count())
-
-        racer_ct = 5
-        group = getNewRacerGroup(racer_ct)
-
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
+        racer_ct += add_ct
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #2.1 (reseed virgin +0 Racer (no-op)') # Expect log event saying nothing to do
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #2.2 (reseed virgin +1 Racer)') # Expect log event saying nothing to do
-        racer_ct = race.run_set.count() + 1
-        num_to_add = 1
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        add_ct = 1
+        race.racer_group = addRacersToRacerGroup(group, add_ct)
+        self.rm.seedRace(race)
+        racer_ct += add_ct
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #2.2 (reseed virgin +5 Racer)') # Expect log event saying nothing to do
-        racer_ct = race.run_set.count() + 5
-        num_to_add = 5
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        add_ct = 2
+        race.racer_group = addRacersToRacerGroup(group, add_ct)
+        self.rm.seedRace(race)
+        racer_ct += add_ct
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
@@ -182,29 +201,21 @@ class EventManagerTestSuite(django.test.TestCase):
         run.run_completed = True
 
         print('===== SeedRace #3.1 (reseed partial +1 Racer)')
-        racer_ct = race.run_set.count() + 1
-        num_to_add = 1
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        add_ct = 1
+        race.racer_group = addRacersToRacerGroup(group, add_ct)
+        self.rm.seedRace(race)
+        racer_ct += add_ct
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
-        print('===== SeedRace #3.2 (reseed partial +2 Racers)')
-        racer_ct = race.run_set.count() + 2
-        num_to_add = 2
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
-        self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
+        print('===== SeedRace #3.5 (reseed partial +4 Racers)')
         printLaneAssignments(race)
-        self.validateLaneAssignments(race)
-
-        print('===== SeedRace #3.5 (reseed partial +7 Racers)')
-        printLaneAssignments(race)
-        racer_ct = race.run_set.count() + 7
-        num_to_add = 7
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        add_ct = 4
+        race.racer_group = addRacersToRacerGroup(group, add_ct)
+        self.assertIs(race.racer_group, group)
+        self.rm.seedRace(race)
+        racer_ct += add_ct
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
@@ -220,15 +231,14 @@ class EventManagerTestSuite(django.test.TestCase):
         self.validateLaneAssignments(race)
 
         print('===== SeedRace #4.1 (Race completed, no Racer change (should be a no-op))')
-        self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
+        self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race))
 
         print('===== SeedRace #4.2 (completed, with +1 Racers)')
-        racer_ct = race.run_set.count() + 1
-        num_to_add = 1
-        group = addRacersToRacerGroup(group, num_to_add)
-        self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race, group))
+        add_ct = 1
+        race.racer_group = addRacersToRacerGroup(group, add_ct)
+        self.assertRaises(RaceAdminException, lambda: self.rm.seedRace(race))
 
-        print('Exit %s'%name)
+        print('Exit {}'.format(name))
         return race # We use this in other tests
 
     def testSwapRacers_basic_notstarted(self, name='testSwapRacers_basic_notstarted'):
@@ -277,25 +287,25 @@ class EventManagerTestSuite(django.test.TestCase):
 
         num_to_add = 2
         group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
         num_to_add = 1
         group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
  
         num_to_add = 1
         group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
  
         num_to_add = 5
         group = addRacersToRacerGroup(group, num_to_add)
-        self.rm.seedRace(race, group)
+        self.rm.seedRace(race)
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
 
@@ -303,138 +313,79 @@ class EventManagerTestSuite(django.test.TestCase):
 
     def testGetRaceResults_NotStarted(self):
         name='testGetRaceResults_NotStarted'
-        print('Enter %s'%name)
-        DerbyEvent.objects.filter(event_name=name).delete()
-        de = self.rm.createDerbyEvent(name, '2013-02-02')
-        race = self.rm.createRace(de, name, 3, 1)
-        race_id = race.id
-        self.assertTrue(0 == Run.objects.filter(race_id=race_id).count())
-        self.rm.seedRace(race, Group.objects.get(id=1))
-        self.assertTrue(0 < Run.objects.filter(race_id=race_id).count())
+        print('Enter {}'.format(name))
+        lane_ct = 6
+        num_racers = 10
+        runs_to_complete = 0
+        race, group, curr = self.setupRace(name, lane_ct, num_racers, runs_to_complete)
+        self.assertTrue(num_racers == Run.objects.filter(race_id=race.id).count())
         self.rm.getRaceStandings(race)
-        print('Exit %s'%name)
+        print('Exit {}'.format(name))
 
     def testGetRaceResults_Complete(self):
         name='testGetRaceResults_Complete'
-        print('Enter %s'%name)
-        starttime = clock()
-
-        print('Clean slate...')
-        DerbyEvent.objects.filter(event_name=name).delete()
-
-        de = self.rm.createDerbyEvent(name, '2013-04-01')
-        self.assertTrue(de.id > 0)
-
-        race = self.rm.createRace(de, name, 2, 1)
-        self.assertTrue(race.id > 0)
-        print('SeedRace...')
-        self.rm.seedRace(race, Group.objects.get(id=1))
-
-        # Introduce artificial results
-        for run in race.run_set.all():
-            run.run_completed = True
-            print('Artificial result, Run.run_seq={0}, run_completed={1}'.format(run.run_seq, run.run_completed))
-#            run.save()
-            for rp in RunPlace.objects.filter(run_id=run.id):
-                rp.seconds = clock() - starttime
-#                rp.save()
-
+        print('Enter {}'.format(name))
+        lane_ct = 6
+        num_racers = 10
+        runs_to_complete = num_racers
+        race, group, curr = self.setupRace(name, lane_ct, num_racers, runs_to_complete)
+        self.assertTrue(num_racers == Run.objects.filter(race_id=race.id).count())
         print(self.rm.getRaceStandings(race))
-        print('Exit %s'%name)
+        print('Exit {}'.format(name))
 
     def testSmallRace(self, name='testSmallRace'):
         print('ENTER {0}'.format(name))
         lane = 6
         racer_ct = 4
         race, group, curr = self.setupRace(name, lane, racer_ct, 0)
+        self.assertTrue(racer_ct == race.lane_ct)
+        self.assertTrue(lane != race.lane_ct)
         self.assertTrue(racer_ct == Run.objects.filter(race_id=race.id).count(), 'Expected/actual={0}/{1}'.format(racer_ct, Run.objects.filter(race_id=race.id).count()))
         printLaneAssignments(race)
         self.validateLaneAssignments(race)
+        print('Exit {}'.format(name))
 
-    def testRacerSort(self):
+    def testRacerSort(self, name='testRacerSort'):
         last_id = 0
         for r in Racer.objects.all():
             self.assertTrue(r.pk > last_id)
             last_id = r.pk
             print r
-            
-    def testBasic(self):
-        name = 'testBasic'
-        de = self.rm.createDerbyEvent(name, '2013-06-01')
-        race = self.rm.createRace(de, name, 6, 1)
-        group = Group.objects.create(name=name)
-        for racer in Racer.objects.all():
-            group.racers.add(racer)
 
-        self.rm.seedRace(race, group)
-
-        have_racers = False
-        for racer in Run.objects.filter(race_id=race.id):
-            print('racer={0}', racer)
-            have_racers = True
-        self.assertTrue(have_racers, 'Run haz no Racers :-(')
-
-    def testRunRaceRandom(self):
-        name = 'testRunRaceRandom'
-        print('Enter %s'%name)
-
-        de = self.rm.createDerbyEvent(name, '2013-05-01')
-        self.assertTrue(de.id > 0)
-
-        race = self.rm.createRace(de, name, 6, 1)
-        self.assertTrue(race.id > 0)
-        print('SeedRace...')
-        self.rm.seedRace(race, Group.objects.get(id=1))
-
+    def testRunRaceRandom(self, name='testRunRaceRandom'):
+        print('Enter {}'.format(name))
+        lane = 6
+        racer_ct = 4
+        race, group, curr = self.setupRace(name, lane, racer_ct, 0)
         self.rm.runRace(race, resultReaderRandom)
+        print('Exit {}'.format(name))
 
-        print('Exit %s'%name)
-
-    def testRunRaceRandomDnf(self):
-        name = 'testRunRaceRandomDnf'
-        print('Enter %s'%name)
-
-        de = self.rm.createDerbyEvent(name, '2013-05-01')
-        self.assertTrue(de.id > 0)
-
-        race = self.rm.createRace(de, name, 6, 1)
-        self.assertTrue(race.id > 0)
-        print('SeedRace...')
-        self.rm.seedRace(race, Group.objects.get(id=1))
-
+    def testRunRaceRandomDnf(self, name='testRunRaceRandomDnf'):
+        print('Enter {}'.format(name))
+        lane = 6
+        racer_ct = 4
+        race, group, curr = self.setupRace(name, lane, racer_ct, 0)
         self.rm.runRace(race, resultReaderRandomDnf)
-        
         printLaneAssignments(race)
+        print('Exit {}'.format(name))
 
-        print('Exit %s'%name)
-        
-    def testRunRaceFixedDnf(self):
-        name = 'testRunRaceFixedDnf'
-        print('Enter %s'%name)
-
-        de = self.rm.createDerbyEvent(name, '2013-05-01')
-        self.assertTrue(de.id > 0)
-
-        race = self.rm.createRace(de, name, 6, 1)
-        self.assertTrue(race.id > 0)
-        print('SeedRace...')
-        self.rm.seedRace(race, Group.objects.get(id=1))
-
+    def testRunRaceFixedDnf(self, name='testRunRaceFixedDnf'):
+        print('Enter {}'.format(name))
+        lane = 6
+        racer_ct = 10
+        race, group, curr = self.setupRace(name, lane, racer_ct, 0)
         self.rm.runRace(race, resultReaderFixedDnf)
-        
         printLaneAssignments(race)
+        print('Exit {}'.format(name))
 
-        print('Exit %s'%name)
-        
-    def testGetRaceStatus(self):
-        name = 'testGetRaceStatus'
-        print('Enter %s'%name)
-        de = self.rm.createDerbyEvent(name, '2013-05-01')
-        self.assertTrue(de.id > 0)
-        race = self.rm.createRace(de, name, 6, 1)
+    def testGetRaceStatus(self, name='testGetRaceStatus'):
+        print('Enter {}'.format(name))
+        lane = 6
+        racer_ct = 10
+        race, group, curr = self.setupRace(name, lane, racer_ct, 0)
         self.assertTrue(race.id > 0)
         print('SeedRace...')
-        self.rm.seedRace(race, Group.objects.get(id=1))
+        self.rm.seedRace(race)
         print('Starting race {0}'.format(race.name))
         last_run_seq = 0
         total_run_ct = race.run_set.all().count() 
@@ -453,8 +404,7 @@ class EventManagerTestSuite(django.test.TestCase):
             last_run_seq = curr
 
         self.rm.getRaceStandings(race)
-        
-        print('Exit %s'%name)
+        print('Exit {}'.format(name))
 
     def validateLaneAssignments(self, race):
         ''' Make sure every Racer races on every lane, and never again itself. '''

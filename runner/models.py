@@ -159,4 +159,4 @@ class Current(SingletonModel):
     stamp = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
-        return 'Current race={}, current run={}'.format(self.race, self.run)
+        return 'Current: {} - {}, current run={}'.format(self.race.derby_event, self.race, self.run)

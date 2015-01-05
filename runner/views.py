@@ -38,16 +38,15 @@ def index(request):
     ''' Django view: index page '''
     return render(request, 'index.html', context_instance=RequestContext(request))
 
-def seedRace(request, race_id, group_id):
+def seedRace(request, race_id):
     log.debug('Entered seedRace')
     if not request.user.is_authenticated() or request.user.username != 'robb':
-        log.warn("Unauthorized call to seedRace from host [{}].".format(request.get_host()))
+        log.error("Unauthorized call to seedRace from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
 
     rm = EventManager()
     race = Race.objects.get(pk=race_id)
-    group = Group.objects.get(pk=group_id)
-    rm.seedRace(race, group)
+    rm.seedRace(race)
 
 def overhead(request, race_id, view):
     ''' Django view: 
