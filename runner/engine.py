@@ -91,7 +91,7 @@ class EventManager:
             random.seed()
 
             if racers.count() < race.lane_ct:
-                log.warn('Racer count ({0}) less than Race lane_ct ({1}.  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
+                log.warn('Racer count ({0}) less than Race lane_ct ({1}).  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
                 race.lane_ct = racers.count()
                 race.save()
 

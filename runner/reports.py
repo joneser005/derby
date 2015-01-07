@@ -31,7 +31,7 @@ class Reports:
         if (None == t or 0 == t or dnf): return "-"
         mph = math.trunc(((math.log((1 / max(1.1, (t-1.0))) * 15) * 200)-75))
         if 0 >= mph: mph = "-"
-        return '{0} MPH'.format(str(mph))
+        return str(mph)
 
     def prerace(self, race):
         ''' Returns report data for a race in JSON format. '''
@@ -185,60 +185,84 @@ class Reports:
             if x<1:
                 break
 
-    def getRaceStatsPrettyText(self, race, includeRaceStatsForEachRacer=None, racer=None):
-
-        log.warn('!!!!! Remove this race simulation code !!!!!')
-        print('About to call completeRuns: race: {0}, runs_to_complete={1}'.format(race, race.run_set.count()))
-        self.completeRuns(race, race.run_set.count())
-        log.warn('!!!!! Remove this race simulation code !!!!!')
-        
-        
+    def getRaceStatsPrettyText(self, race, racer=None, summaryOnly=None):
         data = self.getRaceStatsDict(race, racer)
         race_key = 'race.{0}'.format(race.pk)
-        buffer = StringIO.StringIO()
-        buffer.write('================================================================================\n') # 80
-        buffer.write('Race: {0} - {1}\n'.format(race.name, race.derby_event.event_name))
-        buffer.write('Lanes in use: {0}\n'.format(race.lane_ct))
-        buffer.write('Number of race participants: {0}\n'.format(race.racer_group.racers.count()))
-        buffer.write('Overall race stats:\n')
-        buffer.write('\tFastest run time:{0}\n'.format(data[race_key]['fastest_time']))
-        buffer.write('\tFastest run speed:{0}\n'.format(data[race_key]['fastest_speed']))
-        buffer.write('\tAverage run time:{0}\n'.format(data[race_key]['avg_time']))
-        buffer.write('\tAverage run speed:{0}\n'.format(data[race_key]['avg_speed']))
-        buffer.write('\tSlowest run time:{0}\n'.format(data[race_key]['slowest_time']))
-        buffer.write('\tSlowest run speed:{0}\n'.format(data[race_key]['slowest_speed']))
-        buffer.write('\n------------------------------------------------------------------------------\n')
-        race_stats = buffer.getvalue()
-        buffer.close()
-        buffer = StringIO.StringIO()
 
+        # Consider refactoring...
+        if summaryOnly:
+            buffer = StringIO.StringIO()
+            buffer.write('====== RACE SUMMARY ============================================================\n') # 80
+            buffer.write('Race: {0} - {1}\n'.format(race.name, race.derby_event.event_name))
+            buffer.write('Lanes in use: {0}\n'.format(race.lane_ct))
+            buffer.write('Number of race participants: {0}\n'.format(race.racer_group.racers.count()))
+            buffer.write('Overall race stats:\n')
+            buffer.write('\tFastest run time:  {0:.3f} seconds\n'.format(data[race_key]['fastest_time']))
+            buffer.write('\tFastest run speed: {0} MPH\n'.format(data[race_key]['fastest_speed']))
+            buffer.write('\tAverage run time:  {0:.3f} seconds\n'.format(data[race_key]['avg_time']))
+            buffer.write('\tAverage run speed: {0} MPH\n'.format(data[race_key]['avg_speed']))
+            buffer.write('\tSlowest run time:  {0:.3f} seconds\n'.format(data[race_key]['slowest_time']))
+            buffer.write('\tSlowest run speed: {0} MPH\n'.format(data[race_key]['slowest_speed']))
+            buffer.write('================================================================================\n') # 80
+            race_stats = buffer.getvalue()
+            buffer.close()
+            return race_stats
+
+        # else is not summary only
+        buffer = StringIO.StringIO()
+        buffer.write('====== RACE RESULTS ============================================================\n') # 80
         racers = []
         if racer:
             racers.append(racer)
         else:
             racers = race.racer_group.racers.all().order_by('person__rank')
 
-        if not includeRaceStatsForEachRacer:
-            buffer.write(race_stats)
+        laneResults = self.getLaneResultsByRacerDict(race)
 
         for racer in racers:
-            buffer.write('Cub rank: {0}\n'.format(racer.person.rank))
+#             buffer.write(race_stats)
+            buffer.write('\nCub rank: {0}\n'.format(racer.person.rank))
             racer_key = 'racer.{0}'.format(racer.pk)
-            if includeRaceStatsForEachRacer:
-                buffer.write(race_stats)
-            buffer.write('Racer {0} stats:\n'.format(racer))
-            buffer.write('\tFastest run time:{0}\n'.format(data[racer_key]['fastest_time']))
-            buffer.write('\tFastest run speed:{0}\n'.format(data[racer_key]['fastest_speed']))
-            buffer.write('\tAverage run time:{0}\n'.format(data[racer_key]['avg_time']))
-            buffer.write('\tAverage run speed:{0}\n'.format(data[racer_key]['avg_speed']))
-            buffer.write('\tSlowest run time:{0}\n'.format(data[racer_key]['slowest_time']))
-            buffer.write('\tSlowest run speed:{0}\n'.format(data[racer_key]['slowest_speed']))
-            buffer.write('\n------------------------------------------------------------------------------\n')
-            if 1 < len(racers):
-                buffer.write('\f')
+            buffer.write('Racer {0}\n\n'.format(racer))
+            buffer.write('\t                           Racer / Overall\n')
+            buffer.write('\tFastest run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['fastest_time'], data[race_key]['fastest_time']))
+            buffer.write('\tFastest run speed (MPH):     {} / {}\n'.format(data[racer_key]['fastest_speed'], data[race_key]['fastest_speed']))
+            buffer.write('\tAverage run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['avg_time'], data[race_key]['avg_time']))
+            buffer.write('\tAverage run speed (MPH):     {} / {}\n'.format(data[racer_key]['avg_speed'], data[race_key]['avg_speed']))
+            buffer.write('\tSlowest run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['slowest_time'], data[race_key]['slowest_time']))
+            buffer.write('\tSlowest run speed (MPH):     {} / {}\n'.format(data[racer_key]['slowest_speed'], data[race_key]['slowest_speed']))
+
+            buffer.write('\nIndividuals Runs:\n')
+            buffer.write('\n\t      \tLane\t Time\t  MPH\tPlace\n')
+            buffer.write(  '\t      \t----\t------\t-------\t-----\n')
+            for rp in RunPlace.objects.filter(run__race=race, racer=racer).order_by('run__run_seq'):
+                buffer.write('\tRun #{0}\t  {1}\t{2}\t  {3}\t  {4}\n'.format(rp.run.run_seq, rp.lane, ('DNF' if rp.dnf else '{:.3f}'.format(rp.seconds)), self.speed(rp.seconds), laneResults['{0}:{1}'.format(racer.id, rp.lane)][4]))
+            buffer.write('\n------------------------------------------------------------------------------\n\f')
         buffer.write('================================================================================\n') # 80
         result = buffer.getvalue()
         buffer.close()
+        return result
+    
+    def getLaneResultsByRacerDict(self, race):
+        ''' Returns a dict of rows: key={racer_id:x, run_seq:x, lane:x, seconds:x, place:x},
+        where key = racer_id:lane '''
+        result = {}
+        cur = connections['default'].cursor()
+        cur.execute(''' select rp.racer_id racer_id, run.run_seq run_seq, rp.lane lane, rp.seconds seconds,
+case rp.dnf when 0 then count(other_rps.id)+1 when 1 then 'DNF' end place
+from runner_runplace rp
+join runner_run run on (run.id = rp.run_id)
+left join runner_runplace other_rps on (rp.run_id = other_rps.run_id and rp.id != other_rps.id
+    and other_rps.seconds < rp.seconds and other_rps.dnf = 0)
+where run.race_id = %s 
+group by rp.racer_id, run.run_seq, rp.lane, rp.seconds
+order by rp.racer_id, rp.lane ''', [race.id])
+
+        header = ('racer_id', 'run_seq', 'lane', 'seconds', 'place')
+        result['header'] = header
+        for row in cur.fetchall():
+            key = '{0}:{1}'.format(row[0], row[2])
+            result[key] = row
         return result
 
     def getRaceStatsDict(self, race, racer=None):

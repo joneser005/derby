@@ -1,3 +1,4 @@
+norun on f5 :-)
 ---------------------------------------------
 -- View Race info
 select * from runner_derbyevent
@@ -5,10 +6,9 @@ select * from runner_current
 select * from runner_race order by id
 select * from runner_group order by id
 select * from runner_group_racers where group_id = 2
-select count(*) from runner_run where race_id = 2
-select * from runner_racer where id=30
-	--where picture like '%default%'
-	order by stamp desc
+select race_id, count(*) from runner_run
+ group by race_id
+
 ---------------------------------------------
 -- View Run/RunPlaces for a Race.id
 select * 
@@ -23,22 +23,27 @@ delete from runner_runplace where run_id in
 delete from runner_run where race_id = 2;
 */
 
-select rp.racer_id as racer_id, run.run_seq as run_seq, r.name as name, r.picture as img_url, p.rank as rank
-from runner_runplace rp
-join runner_run run on run.id = rp.run_id
-join runner_current c on c.race_id = run.race_id
-join runner_racer r on r.id = rp.racer_id
-join runner_person p on p.id = r.person_id
-where run.race_id = c.race_id
-  and rp.lane = 1
-  and run.run_completed = 0
-  and rp.seconds is null /* redundant/safety */
-  and rp.racer_id not in (select rp2.racer_id
-                            from runner_runplace rp2
-                            join runner_run run2 on (run2.id = rp2.run_id)
-                           where run2.run_seq = 1)
-  and 14 not in (select rp3.racer_id
-                from runner_runplace rp3
-                where rp3.run_id = rp.run_id) 
+/* Clean DB
+delete from runner_group_racers
+delete from runner_
+*/
 
-/*
+----------------------------------------------
+-- Racer place per Run
+select place, count(*) from (
+select rp.racer_id racer_id, run.run_seq run_seq, rp.lane lane, rp.seconds seconds, 
+case rp.dnf when 0 then count(other_rps.id)+1 when 1 then 'DNF' end place
+from runner_runplace rp
+join runner_run run on (run.id = rp.run_id)
+left join runner_runplace other_rps on (rp.run_id = other_rps.run_id and rp.id != other_rps.id and other_rps.seconds < rp.seconds and other_rps.dnf = 0)
+where run.race_id = 1
+group by rp.racer_id, run.run_seq, rp.lane, rp.seconds
+order by rp.racer_id, rp.lane
+) group by place
+
+----------------------------------------------
+
+select * from runner_runplace rp
+join runner_run run on run.id = rp.run_id
+where run_id in (select id from runner_run where race_id=1)
+and racer_id = 9
