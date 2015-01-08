@@ -8,11 +8,10 @@ python manage.py collectstatic
 
 python manage.py seedRace {race_id}
 python manage.py seedRace 1
-python manage.py printRaceReport {race_id}
-python manage.py printRaceReport 1
-idle-python2.7 -r manage.py shell
-python manage.py test runner --traceback
+python manage.py print {race_id}
+python manage.py print races
 
+python manage.py test runner --traceback
 python manage.py test runner.tests.EventManagerTestSuite
 python manage.py test runner.tests.EventManagerTestSuite.testSeedRaceExisting
 python manage.py test runner.tests.EventManagerTestSuite.testSwapRacers_started

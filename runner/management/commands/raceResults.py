@@ -7,16 +7,21 @@ from runner.reports import Reports
 
 log = logging.getLogger('runner')
 
-class Command(BaseCommand):
-    args = '{race_id} [racer_id] [artificial]'
+class RaceResults:
+    args = '{race_id} [racer_id] [summary] [artificial]'
     help = 'Prints (to stdout) Race and racer stats for one or all racers.'
 
-    def handle(self, *args, **options):
+    def usage(self, args):
+        print('printRaceResults expected race_id [racer_id] [summary] [artificial], got: {}'.format(args))
+        print('\tRace id, name - event:')
+        for race in Race.objects.all(): #.order_by(derby_event__event_date, level, id):
+            print('\t\trace_id={0}, {1} - {2}'.format(race.id, race, race.derby_event))
+        return
+
+    def printRaceResults(self, *args, **options):
+        args = args[0][1:]
         if len(args) not in (1, 2, 3, 4):
-            self.stdout.write('printRaceReport expected race_id [racer_id] [summaryOnly] [artificial], got: {}'.format(args))
-            self.stdout.write('Race id, name - event:')
-            for race in Race.objects.all(): #.order_by(derby_event__event_date, level, id):
-                print('race_id={0}, {1} - {2}'.format(race.id, race, race.derby_event))
+            self.usage(args)
             return
 
         race_id = args[0]
@@ -24,15 +29,22 @@ class Command(BaseCommand):
         summaryOnly = False
         artificial = False
         for arg in args[1:]:
-            if 'artificial' == arg:
+            if 'help' == arg:
+                self.usage(args)
+                return
+            elif 'summary' == arg:
+                summaryOnly = True
+            elif 'artificial' == arg:
                 # This is for testing purposes only.  NEVER use this on production data or you may overwrite good results!
                 artificial = True
-                print('WARNING: Races will be completed with random data')
-            elif 'summaryOnly' == arg:
-                summaryOnly = True
+                print('WARNING: Races will be completed with random data.  For testing only!!!!!')
             else:
                 # HACK: We aren't checking to see if this was specified twice
-                racer_id = arg
+                try:
+                    racer_id = int(arg)
+                except ValueError:
+                    print('Unknown argument: {}'.format(arg))
+                    return
 
         r = Reports()
         race = Race.objects.get(pk=race_id)
@@ -47,14 +59,4 @@ class Command(BaseCommand):
             r.completeRuns(race, race.run_set.count())
         
         print(r.getRaceStatsPrettyText(race, racer, summaryOnly=summaryOnly))
-        log.info('printRaceReport: race id={}  racer_id={} completed.'.format(race_id, racer_id))
-
-# old:
-#         if racer_id:
-#             racer = Racer.objects.get(pk=racer_id)
-#         else:
-#             racer = None
-#         data = r.getRaceStatsDict(race, racer)
-# 
-#         pp = pprint.PrettyPrinter(indent=4)
-#         pp.pprint(data)
+        log.info('printRaceResults: race id={}  racer_id={} completed.'.format(race_id, racer_id))

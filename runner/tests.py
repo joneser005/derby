@@ -110,7 +110,6 @@ class EventManagerTestSuite(django.test.TestCase):
         r = Reports()
         racer = group.racers.first()
         print('===== testRacerStatsReport(race={0}, racer={1}):'.format(race, racer))
-#         print(r.racerStats(race.derby_event, racer))
         print(r.getRaceStatsDict(race, racer))
  
         print('===== testRacerStatsReport(race={0}, <all racers>):'.format(race))
@@ -494,36 +493,5 @@ def resultReaderFixedDnf(run):
     return (run, True)
 
 def printLaneAssignments(race):
-    ''' This would be a great method to move to the production code, after passing in a string or writer thingamajig '''
-    print(race)
-    print(race.racer_group)
-    outline = ' Racer #: '
-    racer_ids = race.racer_group.racers.all().values_list('id', flat=True)
-    print('racer_ids={0}'.format(racer_ids))
-    mx = len(str(max(racer_ids)))
-    outlinearr = ['          ' for x in range(mx)]  # each entry is a line to print, used for vertical race.id printing
-    outlinearr[0] = 'Racer ID: '
-
-    for id in racer_ids:
-        x = str((10**mx) + id)[::-1]
-        for i in range(mx):
-            outlinearr[i] += x[i] + ' '
-    for i in range(mx-1, -1, -1):
-        print(outlinearr[i])
-
-    print '          '.ljust(10+2*len(racer_ids), '-')
-    outline = ''
-    for run in race.runs():
-        run_completed_flag = 'c' if True == run.run_completed else ' '
-        outline = 'Run #{0:>2}{1}> '.format(run.run_seq, run_completed_flag)
-
-        for racer in race.racer_group.racers.all().order_by('id'):
-            found = False
-            for rp in run.runplace_set.all():
-                if rp.racer == racer:
-                    found = True
-                    outline += str(rp.lane) + ' '
-                    break
-            if not found:
-                outline += '- '
-        print(outline)
+    r = Reports()
+    r.printLaneAssignments(race)

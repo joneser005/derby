@@ -93,74 +93,6 @@ class Reports:
         log.info('EXIT prerace(race{0}'.format(race))
         return result
 
-    def racerStats(self, derby_event, racer):
-        ''' Returns report data for a DerbyEvent + Racer.
-            derby_event {
-                
-           race {
-                id: id,
-                name: name,
-                lane_ct: n,
-                racer_ct: nn,
-                overall {
-                    slowest_time: n.nnn,
-                    slowest_mph: nnn,
-                    fastest_time: n.nnn,
-                    fastest_mph: nnn,
-                    avg_time: n.nnn,
-                    avg_speed: nnn
-                },
-                racer {
-                    person {
-                        first_name: fname,
-                        last_name: lname,
-                        rank: rank
-                    },
-                    id: id,
-                    name: name,
-                    racer_pic: pic,
-                    rank_percentile: nn,
-                    rank_place: n,
-                    overall_percentile: nn,
-                    overall_place: n,
-                    slowest_time: n.nnn,
-                    slowest_mph: nnn,
-                    fastest_time: n.nnn,
-                    fastest_mph: nnn,
-                    avg_time: n.nnn,
-                    avg_speed: nnn
-                }
-            }
-        '''
-        log.info('ENTER racerStats(derby_event={0}, racer={1}'.format(derby_event, racer))
-#         em = EventManager()
-        result = {}
-        result['derby_event'] = serializers.serialize("json", DerbyEvent.objects.filter(id=derby_event.id), fields=('event_name', 'event_date'))
-
-        # For the given DerbyEvent, find all Races the requested racer is in.
-        races = []
-        for race in derby_event.race_set.all():
-            log.debug('Searching Race {0} for Racer {1}'.format(race, racer))
-            if 0 < race.racer_group.racers.filter(id=racer.id).count():
-                log.debug('Found race {0} for racer {1}'.format(race, racer))
-                races.append(race)
-                key = 'stats.race_id.{0}'.format(race.id)
-                result[key] = self.getRaceSummaryDict(race)
-                result['{0}.racer_id.{1}'.format(key, racer.id)] = self.getRacerStatsDict(race, racer)
-
-        # TODO Now build the overall stats
-        log.warn('TODO Now build the overall stats')
-        result['derby_event.overall'] = 'TODO'
-#         for race in races:
-            # TODO: add race stats to an overall collector/counter 
-#         result['overall.derby_event'] = self.getRaceSummaryDict()todo
-
-        log.info('EXIT racerStats(derby_event={0}, racer={1}'.format(derby_event, racer))
-        return result
-
-    
-    
-    
     def completeRuns(self, race, runs_to_complete):
         ''' TODO/HACK/FIXME: Remove this, and any code that uses it. '''
         if 0 >= runs_to_complete: return
@@ -184,6 +116,9 @@ class Reports:
             x-=1
             if x<1:
                 break
+
+
+
 
     def getRaceStatsPrettyText(self, race, racer=None, summaryOnly=None):
         data = self.getRaceStatsDict(race, racer)
@@ -337,3 +272,71 @@ where race.id = %s and rp.seconds > 0
     def raceStats(self, race):
         ''' Returns report data for a completed Race. '''
         pass
+
+    def printRacerRunMatrix(self, race):
+        print(race)
+        print(race.racer_group)
+        outline = ' Racer #: '
+        racer_ids = race.racer_group.racers.all().values_list('id', flat=True)
+        print('racer_ids={0}'.format(racer_ids))
+        mx = len(str(max(racer_ids)))
+        outlinearr = ['          ' for x in range(mx)]  # each entry is a line to print, used for vertical race.id printing
+        outlinearr[0] = 'Racer ID: '
+    
+        for id in racer_ids:
+            x = str((10**mx) + id)[::-1]
+            for i in range(mx):
+                outlinearr[i] += x[i] + ' '
+        for i in range(mx-1, -1, -1):
+            print(outlinearr[i])
+    
+        print '          '.ljust(10+2*len(racer_ids), '-')
+        outline = ''
+        for run in race.runs():
+            run_completed_flag = 'c' if True == run.run_completed else ' '
+            outline = 'Run #{0:>2}{1}> '.format(run.run_seq, run_completed_flag)
+    
+            for racer in race.racer_group.racers.all().order_by('id'):
+                found = False
+                for rp in run.runplace_set.all():
+                    if rp.racer == racer:
+                        found = True
+                        outline += str(rp.lane) + ' '
+                        break
+                if not found:
+                    outline += '- '
+            print(outline)
+
+    def printLaneAssignments(self, race):
+        print('Lane-to-Run Matrix.  Cells are Racer ID''s.')
+        print('Race: {} - {}'.format(race.derby_event, race))
+        l1 = '\n\t\tLane #\t'
+        l2 = '\t\t\t'
+        for lane in range(1, race.lane_ct+1):
+            l1 += '{}\t'.format(lane)
+            l2 += '-----\t'
+        print l1
+        print l2
+
+        for run in race.run_set.order_by('run_seq'):
+            line = '\tRun #{0:3d}:\t'.format(run.run_seq)
+            for rp in run.runplace_set.order_by('lane'):
+                line += '{0:3d}\t'.format(rp.racer.id)
+            print(line)
+
+    def printLaneResultDetail(self, race):
+        print('Lane-to-Run Result Matrix.')
+        print('Race: {} - {}'.format(race.derby_event, race))
+        l1 = '\n\t\tLane #\t'
+        l2 = '\t\t\t'
+        for lane in range(1, race.lane_ct+1):
+            l1 += '\t{}\t'.format(lane)
+            l2 += '----------\t'
+        print l1
+        print l2
+
+        for run in race.run_set.order_by('run_seq'):
+            line = '\tRun #{0:3d}:\t'.format(run.run_seq)
+            for rp in run.runplace_set.order_by('lane'):
+                line += '{0:3d}: {1}\t'.format(rp.racer.id, 'DNF' if rp.dnf else str(rp.seconds))
+            print(line)
