@@ -10,6 +10,7 @@ from django.db import transaction
 from django.core import serializers
 
 from models import DerbyEvent, Race, Racer, RacerName, Run, RunPlace, Group, Current
+from django.db.models import Max, Min, Avg
 from engine import EventManager, RaceAdminException
 
 log = logging.getLogger('runner')
@@ -117,10 +118,11 @@ class Reports:
             if x<1:
                 break
 
-
-
-
     def getRaceStatsPrettyText(self, race, racer=None, summaryOnly=None):
+        if 0 == Run.objects.filter(race=race).filter(run_completed=True).count():
+            print('Maybe you should start something first.')
+            return
+
         data = self.getRaceStatsDict(race, racer)
         race_key = 'race.{0}'.format(race.pk)
 
@@ -340,3 +342,28 @@ where race.id = %s and rp.seconds > 0
             for rp in run.runplace_set.order_by('lane'):
                 line += '{0:3d}: {1}\t'.format(rp.racer.id, 'DNF' if rp.dnf else str(rp.seconds))
             print(line)
+
+        # Print lane averages
+        # TODO: find out how DNFs factor into this!
+        lane_stats = {}
+        for lane in range(1, race.lane_ct+1):
+            lane_stat = {}
+            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Avg('seconds')))
+            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Min('seconds')))
+            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Max('seconds')))
+            lane_stats[lane] = lane_stat
+
+        print l2
+
+        line_min = '\t\tMin:\t'
+        line_avg = '\t\tAvg:\t'
+        line_max = '\t\tMax:\t'
+        for lane in range(1, race.lane_ct+1):
+#             print('lane_stats[lane={}]={}'.format(lane, lane_stats[lane]))
+            line_min += '     {:.3f}\t'.format(lane_stats[lane]['seconds__min'])
+            line_avg += '     {:.3f}\t'.format(lane_stats[lane]['seconds__avg'])
+            line_max += '     {:.3f}\t'.format(lane_stats[lane]['seconds__max'])
+        print(line_min)
+        print(line_avg)
+        print(line_max)
+            

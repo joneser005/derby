@@ -59,11 +59,11 @@ class EventManager:
         return runs
 
     def getRunsNotCompleted(self, race):
-        completedRuns = Run.objects.filter(race=race).filter(run_completed=False)
-        log.debug('Run-not-completed count = {0}'.format(completedRuns.count()))
-        for cr in completedRuns:
+        runs = Run.objects.filter(race=race).filter(run_completed=False)
+        log.debug('Run-not-completed count = {0}'.format(runs.count()))
+        for cr in runs:
             log.debug('Run = {0}'.format(cr))
-        return completedRuns
+        return runs
 
     def seedRace(self, race):
         ''' Create placeholder Run+RunPlace records.
