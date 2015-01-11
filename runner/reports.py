@@ -94,30 +94,6 @@ class Reports:
         log.info('EXIT prerace(race{0}'.format(race))
         return result
 
-    def completeRuns(self, race, runs_to_complete):
-        ''' TODO/HACK/FIXME: Remove this, and any code that uses it. '''
-        if 0 >= runs_to_complete: return
-        print('completeRuns: race: {0}, runs_to_complete={1}'.format(race, runs_to_complete))
-        curr = Current.objects.all()[0]
-        curr.race = race
-        curr.save()
-        curr.run = race.run_set.first()
-        x = runs_to_complete
-        for run in race.run_set.filter(run_seq__gte=curr.run.run_seq):
-            run.run_completed = True
-            run.stamp = datetime.datetime.now()
-            print('Artificial result, Run.run_seq={0}, run_completed={1}'.format(run.run_seq, run.run_completed))
-            run.save()
-            for rp in RunPlace.objects.filter(run_id=run.id):
-                rp.seconds = round(3 + random.random() * 3, 3)
-                rp.stamp = datetime.datetime.now()
-                rp.save()
-            curr.run.run_seq+=1  # seeding and swapping uses the Current record
-            curr.save()
-            x-=1
-            if x<1:
-                break
-
     def getRaceStatsPrettyText(self, race, racer=None, summaryOnly=None):
         if 0 == Run.objects.filter(race=race).filter(run_completed=True).count():
             print('Maybe you should start something first.')
@@ -127,27 +103,29 @@ class Reports:
         race_key = 'race.{0}'.format(race.pk)
 
         # Consider refactoring...
+        buffer = StringIO.StringIO()
         if summaryOnly:
-            buffer = StringIO.StringIO()
             buffer.write('====== RACE SUMMARY ============================================================\n') # 80
-            buffer.write('Race: {0} - {1}\n'.format(race.name, race.derby_event.event_name))
-            buffer.write('Lanes in use: {0}\n'.format(race.lane_ct))
-            buffer.write('Number of race participants: {0}\n'.format(race.racer_group.racers.count()))
-            buffer.write('Overall race stats:\n')
-            buffer.write('\tFastest run time:  {0:.3f} seconds\n'.format(data[race_key]['fastest_time']))
-            buffer.write('\tFastest run speed: {0} MPH\n'.format(data[race_key]['fastest_speed']))
-            buffer.write('\tAverage run time:  {0:.3f} seconds\n'.format(data[race_key]['avg_time']))
-            buffer.write('\tAverage run speed: {0} MPH\n'.format(data[race_key]['avg_speed']))
-            buffer.write('\tSlowest run time:  {0:.3f} seconds\n'.format(data[race_key]['slowest_time']))
-            buffer.write('\tSlowest run speed: {0} MPH\n'.format(data[race_key]['slowest_speed']))
+        buffer.write('Race: {0} - {1}\n'.format(race.name, race.derby_event.event_name))
+        buffer.write('Lanes in use: {0}\n'.format(race.lane_ct))
+        buffer.write('Number of race participants: {0}\n'.format(race.racer_group.racers.count()))
+        buffer.write('Overall race stats:\n')
+        buffer.write('\tFastest run time:  {0:.3f} seconds\n'.format(data[race_key]['fastest_time']))
+        buffer.write('\tFastest run speed: {0} MPH\n'.format(data[race_key]['fastest_speed']))
+        buffer.write('\tAverage run time:  {0:.3f} seconds\n'.format(data[race_key]['avg_time']))
+        buffer.write('\tAverage run speed: {0} MPH\n'.format(data[race_key]['avg_speed']))
+        buffer.write('\tSlowest run time:  {0:.3f} seconds\n'.format(data[race_key]['slowest_time']))
+        buffer.write('\tSlowest run speed: {0} MPH\n'.format(data[race_key]['slowest_speed']))
+        completed_run_count = race.run_set.filter(run_completed=True).count()
+        total_run_count = race.run_set.all().count()
+        buffer.write('\n\t{} of {} runs are completed.\n'.format(completed_run_count, total_run_count))
+        race_stats = buffer.getvalue()
+        buffer.close()
+        if summaryOnly or completed_run_count < total_run_count:
             buffer.write('================================================================================\n') # 80
-            race_stats = buffer.getvalue()
-            buffer.close()
             return race_stats
 
-        # else is not summary only
         buffer = StringIO.StringIO()
-        buffer.write('====== RACE RESULTS ============================================================\n') # 80
         racers = []
         if racer:
             racers.append(racer)
@@ -157,25 +135,27 @@ class Reports:
         laneResults = self.getLaneResultsByRacerDict(race)
 
         for racer in racers:
-#             buffer.write(race_stats)
-            buffer.write('\nCub rank: {0}\n'.format(racer.person.rank))
+            buffer.write('--------------------------------------------------------------------------------\n') # 80
+            buffer.write('RACE RESULTS\n')
+            buffer.write('Racer {0}\n'.format(racer))
             racer_key = 'racer.{0}'.format(racer.pk)
-            buffer.write('Racer {0}\n\n'.format(racer))
-            buffer.write('\t                           Racer / Overall\n')
-            buffer.write('\tFastest run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['fastest_time'], data[race_key]['fastest_time']))
-            buffer.write('\tFastest run speed (MPH):     {} / {}\n'.format(data[racer_key]['fastest_speed'], data[race_key]['fastest_speed']))
-            buffer.write('\tAverage run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['avg_time'], data[race_key]['avg_time']))
-            buffer.write('\tAverage run speed (MPH):     {} / {}\n'.format(data[racer_key]['avg_speed'], data[race_key]['avg_speed']))
-            buffer.write('\tSlowest run time (secs):   {:.3f} / {:.3f}\n'.format(data[racer_key]['slowest_time'], data[race_key]['slowest_time']))
-            buffer.write('\tSlowest run speed (MPH):     {} / {}\n'.format(data[racer_key]['slowest_speed'], data[race_key]['slowest_speed']))
-
+            buffer.write(race_stats)
+            buffer.write('\nCub rank: {0}\tPlace: {1}\n'.format(racer.person.rank, data[race_key]['place.byrank'][str(racer.id)]))
+            buffer.write('\nOverall race place: {0}\n'.format(data[race_key]['place'][str(racer.id)]))
+            buffer.write('\t                     Racer\tOverall\n')
+            buffer.write('\t                     -----\t------------\n')
+            buffer.write('\tFastest run time:    {:.3f}\t{:.3f} seconds\n'.format(data[racer_key]['fastest_time'], data[race_key]['fastest_time']))
+            buffer.write('\tFastest run speed:     {}\t{} MPH\n'.format(data[racer_key]['fastest_speed'], data[race_key]['fastest_speed']))
+            buffer.write('\tAverage run time:    {:.3f}\t{:.3f} seconds\n'.format(data[racer_key]['avg_time'], data[race_key]['avg_time']))
+            buffer.write('\tAverage run speed:     {}\t{} MPH\n'.format(data[racer_key]['avg_speed'], data[race_key]['avg_speed']))
+            buffer.write('\tSlowest run time:    {:.3f}\t{:.3f} seconds\n'.format(data[racer_key]['slowest_time'], data[race_key]['slowest_time']))
+            buffer.write('\tSlowest run speed:     {}\t{} MPH\n'.format(data[racer_key]['slowest_speed'], data[race_key]['slowest_speed']))
             buffer.write('\nIndividuals Runs:\n')
             buffer.write('\n\t      \tLane\t Time\t  MPH\tPlace\n')
             buffer.write(  '\t      \t----\t------\t-------\t-----\n')
             for rp in RunPlace.objects.filter(run__race=race, racer=racer).order_by('run__run_seq'):
                 buffer.write('\tRun #{0}\t  {1}\t{2}\t  {3}\t  {4}\n'.format(rp.run.run_seq, rp.lane, ('DNF' if rp.dnf else '{:.3f}'.format(rp.seconds)), self.speed(rp.seconds), laneResults['{0}:{1}'.format(racer.id, rp.lane)][4]))
-            buffer.write('\n------------------------------------------------------------------------------\n\f')
-        buffer.write('================================================================================\n') # 80
+            buffer.write('\n--------------------------------------------------------------------------------\n\f')
         result = buffer.getvalue()
         buffer.close()
         return result
@@ -215,6 +195,40 @@ order by rp.racer_id, rp.lane ''', [race.id])
 
         return result 
 
+    def getRacePlaces(self, race_id, by_rank=None):
+        ''' Returns a dict of race placements as follows:
+            result[racer_id] = { racer_id : racer_id, rank, avg_seconds, place }
+
+            Set by_rank to True to group places by rank.
+        '''
+        result = {}
+
+        cur = connections['default'].cursor()
+        cur.execute(''' select a1.racer_id, a1.rank as rank, a1.avg_seconds, count(*) as place
+from (    select rp.racer_id, p.rank, avg(rp.seconds) as avg_seconds
+    from runner_runplace rp
+    join runner_run run on run.id = rp.run_id
+    join runner_racer racer on racer.id = rp.racer_id
+    join runner_person p on p.id = racer.person_id
+    where run.race_id = %s
+    group by racer_id, p.rank) as a1
+left outer join (    select rp.racer_id, p.rank, avg(rp.seconds) as avg_seconds
+    from runner_runplace rp
+    join runner_run run on run.id = rp.run_id
+    join runner_racer racer on racer.id = rp.racer_id
+    join runner_person p on p.id = racer.person_id
+    where run.race_id = %s
+    group by racer_id, p.rank) as a2 
+where a2.avg_seconds <= a1.avg_seconds
+{}
+group by a1.racer_id, a1.rank, a1.avg_seconds
+order by place '''.format('and a1.rank = a2.rank' if by_rank else ' '), [race_id, race_id])
+
+        for row in cur.fetchall():
+            key = '{0}'.format(row[0])
+            result[key] = row[3]  # place
+        return result
+
     def getRaceSummaryDict(self, race):
         ''' Gets Race summary info. '''
         result = {}
@@ -222,6 +236,8 @@ order by rp.racer_id, rp.lane ''', [race.id])
         result['name'] = race.name
         result['lane_ct'] = race.lane_ct
         result['racer_ct'] = race.racer_group.count()
+        result['place'] = self.getRacePlaces(race.id)
+        result['place.byrank'] = self.getRacePlaces(race.id, True)
 
         cur = connections['default'].cursor()
         cur.execute(''' select max(rp.seconds) as slowest_time, min(rp.seconds) as fastest_time, avg(rp.seconds) as avg_time
@@ -355,15 +371,17 @@ where race.id = %s and rp.seconds > 0
 
         print l2
 
-        line_min = '\t\tMin:\t'
-        line_avg = '\t\tAvg:\t'
-        line_max = '\t\tMax:\t'
-        for lane in range(1, race.lane_ct+1):
-#             print('lane_stats[lane={}]={}'.format(lane, lane_stats[lane]))
-            line_min += '     {:.3f}\t'.format(lane_stats[lane]['seconds__min'])
-            line_avg += '     {:.3f}\t'.format(lane_stats[lane]['seconds__avg'])
-            line_max += '     {:.3f}\t'.format(lane_stats[lane]['seconds__max'])
-        print(line_min)
-        print(line_avg)
-        print(line_max)
-            
+        if 0 == race.run_set.filter(run_completed=True).count():
+            print('\n***** Race has not yet been started *****')
+        else:
+            line_min = '\t\tMin:\t'
+            line_avg = '\t\tAvg:\t'
+            line_max = '\t\tMax:\t'
+            for lane in range(1, race.lane_ct+1):
+    #             print('lane_stats[lane={}]={}'.format(lane, lane_stats[lane]))
+                line_min += '     {:.3f}\t'.format(lane_stats[lane]['seconds__min'])
+                line_avg += '     {:.3f}\t'.format(lane_stats[lane]['seconds__avg'])
+                line_max += '     {:.3f}\t'.format(lane_stats[lane]['seconds__max'])
+            print(line_min)
+            print(line_avg)
+            print(line_max)

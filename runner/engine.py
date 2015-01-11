@@ -81,67 +81,7 @@ class EventManager:
         racers = race.racer_group.racers  # alias
         start_seq = 1 # for a given Race, each Run is numbered in sequence
 
-        if 0 == race.run_set.count():
-            # REFACTOR: Move to new function, seedNewRace
-            # Fresh race
-            log.info('Seeding new race {}, {} racers.....'.format(race, racers.count()))
-
-            # Create Run and RunPlace records
-            # One Run per Racer equates to one RunPlace per Racer+Lane
-            random.seed()
-
-            if racers.count() < race.lane_ct:
-                log.warn('Racer count ({0}) less than Race lane_ct ({1}).  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
-                race.lane_ct = racers.count()
-                race.save()
-
-            offsets = random.sample(range(0, racers.count()), race.lane_ct)
-# TODO/FIXME: These are examples of offsets that don't work with the current algo - we run out of runs/racers to swap when racer/lane counts start at 10/6 in testSwapRacers_started
-# This isn't a bug as much as just a deficiency in the reseeder.  Maybe if we tried starting from a different lane, then retried the op, repeat a few times, could minimize the problem.
-# Or maybe we just ignore this, as it will only come up if we attempt to reseed when close to the end.
-#             offsets = [0,4,6,5,8,3]
-#            offsets = [7,2,5,4,6,1]
-#             offsets = [8,7,1,6,4,3]
-#             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
-            
-            
-            for off in offsets:
-                log.debug('offset: {0}'.format(off))
-            racers_array = racers.all()[:]
-            lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
-            for lane in range(1, race.lane_ct+1):
-                if lane > len(racers_array):
-                    # An adjustment to the lane_ct, above, so this should be dead code.
-                    log.info('Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(lane, race.lane_ct))
-                    break 
-#                 log.debug('Creating Lane Tumbler #{0}'.format(lane))
-                tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
-                for seq in range(start_seq, racers.count()+1):  # seq is one-based 
-                    racerIndex = seq -1 + offsets[lane-1] # subtract one b/c seq is one-based
-                    while racerIndex >= racers.count():
-                        racerIndex -= racers.count();
-#                     log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
-                    tumbler.append(racers_array[racerIndex])
-#                 log.debug('lane={0}'.format(lane))
-                lane_tumbler[lane-1] = tumbler
-
-            # Create the Run and RunPlace records based on above
-            log.info('Creating Run and RunPlace records.....')
-            lane_header = '  Lane #'
-            lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))
-            log.info(lane_header)
-            lane_header = '-----'.join(' '.format(y) for y in range(lane+1))
-            log.info('        ' + lane_header)
-            for seq in range(1, racers.count()+1):
-                run = race.run_set.create(run_seq=seq)
-                seedTableRow = 'Run #{0}: '.format(seq)
-                for lane in range(1, race.lane_ct+1):
-                    run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
-                    seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
-                log.debug(seedTableRow)
-
-            log.info('Done seeding new race.')
-        else:
+        if 0 <  race.run_set.count():
             # REFACTOR: Move to new function, reseedRace
             runs = self.getRunsCompleted(race)
             if runs != None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct - 1:
@@ -208,7 +148,66 @@ class EventManager:
                 log.info('Done reseeding existing race with {0} additional Racers.'.format(diff))
             else:
                 log.info('Nothing to do!')
-        # END reseed
+
+        else:
+            # REFACTOR: Move to new function, seedNewRace
+            # Fresh race
+            log.info('Seeding new race {}, {} racers.....'.format(race, racers.count()))
+
+            # Create Run and RunPlace records
+            # One Run per Racer equates to one RunPlace per Racer+Lane
+            random.seed()
+
+            if racers.count() < race.lane_ct:
+                log.warn('Racer count ({0}) less than Race lane_ct ({1}).  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
+                race.lane_ct = racers.count()
+                race.save()
+
+            offsets = random.sample(range(0, racers.count()), race.lane_ct)
+# TODO/SOMEDAY: These are examples of offsets that don't work with the current algo - we run out of runs/racers to swap when racer/lane counts start at 10/6 in testSwapRacers_started
+# YES, this: This isn't a bug as much as just a deficiency in the reseeder.  Maybe if we tried starting from a different lane, then retried the op, repeat a few times, could minimize the problem.
+# Or maybe we just ignore this, as it will only come up if we attempt to reseed when close to the end.
+#             offsets = [0,4,6,5,8,3]
+#            offsets = [7,2,5,4,6,1]
+#             offsets = [8,7,1,6,4,3]
+#             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
+
+            for off in offsets:
+                log.debug('offset: {0}'.format(off))
+            racers_array = racers.all()[:]
+            lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
+            for lane in range(1, race.lane_ct+1):
+                if lane > len(racers_array):
+                    # An adjustment to the lane_ct, above, so this should be dead code.
+                    log.info('Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(lane, race.lane_ct))
+                    break 
+#                 log.debug('Creating Lane Tumbler #{0}'.format(lane))
+                tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
+                for seq in range(start_seq, racers.count()+1):  # seq is one-based 
+                    racerIndex = seq -1 + offsets[lane-1] # subtract one b/c seq is one-based
+                    while racerIndex >= racers.count():
+                        racerIndex -= racers.count();
+#                     log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
+                    tumbler.append(racers_array[racerIndex])
+#                 log.debug('lane={0}'.format(lane))
+                lane_tumbler[lane-1] = tumbler
+
+            # Create the Run and RunPlace records based on above
+            log.info('Creating Run and RunPlace records.....')
+            lane_header = '  Lane #'
+            lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))
+            log.info(lane_header)
+            lane_header = '-----'.join(' '.format(y) for y in range(lane+1))
+            log.info('        ' + lane_header)
+            for seq in range(1, racers.count()+1):
+                run = race.run_set.create(run_seq=seq)
+                seedTableRow = 'Run #{0}: '.format(seq)
+                for lane in range(1, race.lane_ct+1):
+                    run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
+                    seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
+                log.debug(seedTableRow)
+
+            log.info('Done seeding new race.')
 
     def swapRacers(self, race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
         ''' Swaps a pair of RunSequence => Racer assignments '''
