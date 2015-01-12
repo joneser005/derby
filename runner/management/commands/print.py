@@ -16,15 +16,18 @@ class Command(BaseCommand):
 Print list of races:
     python manage.py print races
 
-Print race results:
-    python manage.py print racerResults {race_id} [racer_id] [summary]
-
 Print Racer <==> Run matrix:
     python manage.py print racerRunMatrix {race_id}
 
+Print race results:
+*    python manage.py print racerResults {race_id} [racer_id] [summary]
+
 Print Run results:
-    python manage.py print laneResults {race_id}     <== prefer
+*   python manage.py print laneResults {race_id}
     python manage.py print laneAssignments {race_id}
+
+Print Race Summary and Standings:
+*   python manage.py print standings {race_id}
 '''
 
     help = 'Prints to stdout various race info/reports.'
@@ -53,7 +56,6 @@ Print Run results:
                 return
 
             race = Race.objects.get(pk=cmd_args[1])
-            print(race)
             racer_id = None
             summaryOnly = False
             for arg in cmd_args[2:]:
@@ -66,14 +68,17 @@ Print Run results:
                     except ValueError:
                         print('Unknown argument: {}'.format(arg))
                         return
-    
             r = Reports()
             if racer_id:
                 racer = Racer.objects.get(pk=racer_id)
             else:
                 racer = None
     
-            print(r.getRaceStatsPrettyText(race, racer, summaryOnly=summaryOnly))
+            r.printPrettyRaceStats(race, racer, summaryOnly=summaryOnly)
+        elif 'standings' == action:
+            r = Reports()
+            race = Race.objects.get(pk=cmd_args[1])
+            r.printStandings(race)
         elif 'races' == action:
             self.printRaces()
         elif 'racerrunmatrix' == action:

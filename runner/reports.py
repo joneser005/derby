@@ -94,18 +94,39 @@ class Reports:
         log.info('EXIT prerace(race{0}'.format(race))
         return result
 
-    def getRaceStatsPrettyText(self, race, racer=None, summaryOnly=None):
-        if 0 == Run.objects.filter(race=race).filter(run_completed=True).count():
-            print('Maybe you should start something first.')
-            return
+    def printPrettyStandings(self, race):
+#         if 0 == Run.objects.filter(race=race).filter(run_completed=True).count():
+#             print('Maybe you should start something first.')
+#             return
+# 
+#         data = self.getRaceStatsDict(race, racer)
+#         print(self.getPrettyRaceSummary(race, data))
+# 
+#         print('Race results by overall racer placement:')
+#         result = {}
+#         cur = connections['default'].cursor()
+#         cur.execute(''' select rp.racer_id racer_id, run.run_seq run_seq, rp.lane lane, rp.seconds seconds,
+# case rp.dnf when 0 then count(other_rps.id)+1 when 1 then 'DNF' end place
+# from runner_runplace rp
+# join runner_run run on (run.id = rp.run_id)
+# left join runner_runplace other_rps on (rp.run_id = other_rps.run_id and rp.id != other_rps.id
+#     and other_rps.seconds < rp.seconds and other_rps.dnf = 0)
+# where run.race_id = %s 
+# group by rp.racer_id, rp.seconds
+# order by rp.racer_id, rp.lane ''', [race.id])
+# 
+#         if (1 == race.level):  # pack heats are level 1
+#             header = ('person', 'racer', 'rank', 'best time/speed', 'worst time/speed', 'avg time/speed', 'rank place', 'overall place')
+#             todo
+#         else:
+#             header = ('person', 'racer', 'rank', 'best time/speed', 'worst time/speed', 'avg time/speed', 'overall place')
+#             todo
+        print('TODO: Not yet implemented')
 
-        data = self.getRaceStatsDict(race, racer)
-        race_key = 'race.{0}'.format(race.pk)
 
-        # Consider refactoring...
+    def getPrettyRaceSummary(self, race, data):
         buffer = StringIO.StringIO()
-        if summaryOnly:
-            buffer.write('====== RACE SUMMARY ============================================================\n') # 80
+        race_key = 'race.{0}'.format(race.pk)
         buffer.write('Race: {0} - {1}\n'.format(race.name, race.derby_event.event_name))
         buffer.write('Lanes in use: {0}\n'.format(race.lane_ct))
         buffer.write('Number of race participants: {0}\n'.format(race.racer_group.racers.count()))
@@ -119,11 +140,25 @@ class Reports:
         completed_run_count = race.run_set.filter(run_completed=True).count()
         total_run_count = race.run_set.all().count()
         buffer.write('\n\t{} of {} runs are completed.\n'.format(completed_run_count, total_run_count))
+        buffer.write('................................................................................\n') # 80
         race_stats = buffer.getvalue()
         buffer.close()
-        if summaryOnly or completed_run_count < total_run_count:
-            buffer.write('================================================================================\n') # 80
-            return race_stats
+        return race_stats
+
+    def printPrettyRaceStats(self, race, racer=None, summaryOnly=None):
+        if 0 == Run.objects.filter(race=race).filter(run_completed=True).count():
+            print('Maybe you should start something first.')
+            return
+
+        data = self.getRaceStatsDict(race, racer)
+
+        if (summaryOnly):
+            print('================================================================================\n') # 80
+            print(self.getPrettyRaceSummary(race, data))
+            print('================================================================================\n') # 80
+            return
+        else:
+            race_stats = self.getPrettyRaceSummary(race, data)
 
         buffer = StringIO.StringIO()
         racers = []
@@ -133,6 +168,7 @@ class Reports:
             racers = race.racer_group.racers.all().order_by('person__rank')
 
         laneResults = self.getLaneResultsByRacerDict(race)
+        race_key = 'race.{0}'.format(race.pk)
 
         for racer in racers:
             buffer.write('--------------------------------------------------------------------------------\n') # 80
@@ -140,8 +176,11 @@ class Reports:
             buffer.write('Racer {0}\n'.format(racer))
             racer_key = 'racer.{0}'.format(racer.pk)
             buffer.write(race_stats)
-            buffer.write('\nCub rank: {0}\tPlace: {1}\n'.format(racer.person.rank, data[race_key]['place.byrank'][str(racer.id)]))
-            buffer.write('\nOverall race place: {0}\n'.format(data[race_key]['place'][str(racer.id)]))
+            buffer.write('INDIVIDUAL RACE RESULTS\n')
+            buffer.write('Racer {0}\n'.format(racer))
+
+            buffer.write('\nOverall race\tplace: {0}\n'.format(data[race_key]['place'][str(racer.id)]))
+            buffer.write('Cub rank: {0}\tplace: {1}\n'.format(racer.person.rank, data[race_key]['place.byrank'][str(racer.id)]))
             buffer.write('\t                     Racer\tOverall\n')
             buffer.write('\t                     -----\t------------\n')
             buffer.write('\tFastest run time:    {:.3f}\t{:.3f} seconds\n'.format(data[racer_key]['fastest_time'], data[race_key]['fastest_time']))
@@ -158,7 +197,7 @@ class Reports:
             buffer.write('\n--------------------------------------------------------------------------------\n\f')
         result = buffer.getvalue()
         buffer.close()
-        return result
+        print result
     
     def getLaneResultsByRacerDict(self, race):
         ''' Returns a dict of rows: key={racer_id:x, run_seq:x, lane:x, seconds:x, place:x},
