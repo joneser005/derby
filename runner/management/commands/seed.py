@@ -53,3 +53,4 @@ class Command(BaseCommand):
         rm.seedRace(race)
 
         log.info('Finished seeding race {}/{}'.format(race_id, race.name))
+        log.info("Don't forget to set Current!")

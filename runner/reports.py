@@ -193,7 +193,20 @@ class Reports:
             buffer.write('\n\t      \tLane\t Time\t  MPH\tPlace\n')
             buffer.write(  '\t      \t----\t------\t-------\t-----\n')
             for rp in RunPlace.objects.filter(run__race=race, racer=racer).order_by('run__run_seq'):
-                buffer.write('\tRun #{0}\t  {1}\t{2}\t  {3}\t  {4}\n'.format(rp.run.run_seq, rp.lane, ('DNF' if rp.dnf else '{:.3f}'.format(rp.seconds)), self.speed(rp.seconds), laneResults['{0}:{1}'.format(racer.id, rp.lane)][4]))
+                if rp.dnf:
+                    seconds = 'DNF'
+                    speed = '---'
+                    place = '---'
+                elif rp.seconds is None:
+                    seconds = '-'
+                    speed = '-'
+                    place = '-'
+                else:
+                    seconds = '{:.3f}'.format(rp.seconds)
+                    speed = self.speed(rp.seconds)
+                    place = laneResults['{0}:{1}'.format(racer.id, rp.lane)][4]
+
+                buffer.write('\tRun #{0}\t  {1}\t{2}\t  {3}\t  {4}\n'.format(rp.run.run_seq, rp.lane, seconds, speed, place))
             buffer.write('\n--------------------------------------------------------------------------------\n\f')
         result = buffer.getvalue()
         buffer.close()

@@ -172,8 +172,6 @@ class EventManager:
 #             offsets = [8,7,1,6,4,3]
 #             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
 
-            for off in offsets:
-                log.debug('offset: {0}'.format(off))
             racers_array = racers.all()[:]
             lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
             for lane in range(1, race.lane_ct+1):

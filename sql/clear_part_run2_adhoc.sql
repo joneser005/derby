@@ -15,7 +15,6 @@ join runner_runplace rp on (r.id=rp.run_id)
 where r.race_id = 2
 order by run_seq, lane
 
-
 ------------------------------------------------------------
 -- Lane detail for a Race/Racer
 select * from runner_runplace rp
@@ -54,20 +53,29 @@ delete from runner_run where race_id = 1;
 
 ------------------------------------------------------------
 -- CLEAR Run, RunPlace results for a Race (selective reset)
-update from runner_runplace
+update runner_runplace
 	set seconds=null, dnf=0, stamp=CURRENT_TIMESTAMP
 	where exists (
 		select * from runner_run run 
 		 where run.id = runner_runplace.run_id
-		   and run.race_id = XXXXX
-		   and run.run_seq > YYYYY
+		   and run.race_id = 1
+		   and run.run_seq > 3
 	)
 
-update from runner_run
+update runner_run
 	set run_completed = 0, stamp=CURRENT_TIMESTAMP
-	
-	
-delete  from runner_current
+where race_id = 1
+  and run_seq > 3
+  
+-- View Runs for a Race to get run_id needed to set manually set Current
+select * from runner_run where race_id = 1 order by run_seq
+
+-- Manually update Current
+update runner_current set race_id = 1, run_id = 38, stamp=CURRENT_TIMESTAMP
+
+-- If Current is borked such that the Admin page cannot view it:		
+delete  from runner_current  -- then re-add via admin
 
 select * from runner_current
+------------------------------------------------------------
 */

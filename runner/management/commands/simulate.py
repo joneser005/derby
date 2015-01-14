@@ -9,7 +9,7 @@ from runner.reports import Reports
 log = logging.getLogger('runner')
 
 class Command(BaseCommand):
-    args = '{race_id} # runs to complete'
+    args = '{race_id} {# runs to complete}'
     help = 'Simulates a Race results.  This can be destructive!  Do NOT run this on production races!'
 
     def handle(self, *args, **options):
@@ -30,8 +30,10 @@ class Command(BaseCommand):
         race = Race.objects.get(pk=race_id)
         if len(args) > 1:
             runs_to_complete = int(args[1])
+        else:
+            runs_to_complete = race.run_set.all().count()
 
-        print('About to create {} simulated results for {}'.format(runs_to_complete, race_id))
+        print('About to create {} simulated results for {}'.format(runs_to_complete, race))
         print('!!!! DO NOT run this on production data !!!!!')
         if 'confirm' == raw_input('Type \'confirm\' to proceed or anything else to exit: '):
             log.warn('Simulating race {} with random data.')

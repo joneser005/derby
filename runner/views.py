@@ -18,6 +18,13 @@ log = logging.getLogger('runner')
 stopEvent = threading.Event() #for track control
 lastTrackResult = None
 
+def isControl(request):
+    return request.user.is_authenticated() and request.user.username == 'robb'
+
+def isNotControl(request):
+    ''' Convenience/readability '''
+    return not isControl(request)
+
 def _get_last_update():
     ''' Gets Current.stamp from the database.  Usually.  We have this value
     cached for performance, but ttl is very short. This is just a defense 
@@ -40,7 +47,7 @@ def index(request):
 
 def seedRace(request, race_id):
     log.debug('Entered seedRace')
-    if not request.user.is_authenticated() or request.user.username != 'robb':
+    if isNotControl(request):
         log.error("Unauthorized call to seedRace from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
 
@@ -57,9 +64,10 @@ def overhead(request, race_id, view):
             2) AJAX requests to getData
     '''
     race = getRace(race_id);
-    if race_id == "current": race_id = race.id
+    context = {}
 
     if None != race:
+        if race_id == "current": race_id = race.id
         complete_run_ct = race.run_set.filter(run_completed__exact=True).count()
         total_run_ct = race.run_set.all().count()
 
@@ -74,13 +82,13 @@ def overhead(request, race_id, view):
                     'derbyevent_event_name' : race.derby_event.event_name,
                     'percent_complete'      : int(round(float(percent_complete))),
                     'total_run_ct'          : total_run_ct,
-                    'complete_run_ct'       : complete_run_ct
+                    'complete_run_ct'       : complete_run_ct,
+                    'view'                  : view
                     }
 
     if view != 'standings' and view != 'status':
         raise Http404
 
-    context['view'] = view;
     return render(request, 'overhead.html', context)
 
 def control(request, race_id):
@@ -89,7 +97,7 @@ def control(request, race_id):
             1) context_processor
             2) AJAX requests to getStatusData (not a copy+paste mistake)
     '''
-    if not request.user.is_authenticated() or request.user.username != 'robb':
+    if isNotControl(request):
         return redirect('/runner/race/current/standings', race_id=race_id)
 
     race = getRace(race_id);
@@ -116,6 +124,7 @@ def control(request, race_id):
     return render(request, 'control.html', context)
 
 def getRace(race_id):
+    race = None
     if (race_id == 'current'):
         current = Current.objects.first()
         if current != None and current.race != None:
@@ -213,7 +222,7 @@ def getStandingsDataNoCache(request, race_id):
 # @ensure_csrf_cookie
 def getSwapCandidates(request, race_id):
     log.debug('ENTER getSwapCandidates')
-    if not request.user.is_authenticated() or request.user.username != 'robb':
+    if isNotControl(request):
         log.warn("Unauthorized call to getSwapCandidates from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
 
@@ -231,8 +240,8 @@ def getSwapCandidates(request, race_id):
 # @ensure_csrf_cookie
 def swapRacers(request, race_id):
     ''' Swaps two Racers from different Runs. '''
-    log.debug('ENTER swapRacers')
-    if not request.user.is_authenticated() or request.user.username != 'robb':
+    log.debug('ENTER swapRacers (views)')
+    if isNotControl(request):
         log.warn("Unauthorized call to swapRacers from host [{}].".format(request.get_host()))
         return HttpResponse('403: Failed')
 
@@ -247,7 +256,7 @@ def swapRacers(request, race_id):
     rm = EventManager()
     print(rm)
     rm.swapRacers(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane)
-    log.debug('EXIT swapRacers')
+    log.debug('EXIT swapRacers (views)')
     return HttpResponse('success')
 
 def resetCB():
@@ -263,7 +272,7 @@ def resultsCB(result):
 
 def getRunResult(request, race_id, timeout_secs):
     log.info('getRunResult called by user {}'.format(request.user.username))
-    if not request.user.is_authenticated() or request.user.username != 'robb':
+    if isNotControl(request):
         log.warn("Unauthorized attempt to get track results from host [{}], uid[{}].".format(request.get_host(),request.user.username))
         return HttpResponse('403: Failed')
 
@@ -275,14 +284,38 @@ def getRunResult(request, race_id, timeout_secs):
 
     stopEvent.clear()
     race = Race.objects.get(pk=race_id)
-    settings = { 'lane_ct' : race.lane_ct }
-    r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+
+
+
+
+#     settings = { 'lane_ct' : race.lane_ct }
+    settings = { 'lane_ct' : 6 }  # HACK: Hardcoding lane count, as races with < 6 racers will have this forced down, which will break result reading.
+
+
+
+# FIXME - use production trace reader
+#     r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+
+    log.warn('views.py: !!!!! Using Mock reader !!!!!')
+    log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
+    r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+    log.info('test')
+    log.debug('r={}'.format(r))
+
+
+
+
     r.start()
+
+    log.debug('Called r.start()')
+
     if stopEvent.wait(secs):
+        log.debug('if stopEvent.wait({}) == true'.format(secs))
         jsonResult = json.dumps(lastTrackResult, default=jsonDefaultHandler)
         log.info('Returning track result: {}'.format(jsonResult))
         return HttpResponse(jsonResult);
     else:
+        log.debug('if stopEvent.wait({}) == false (timeout)'.format(secs))
         msg = 'Track result request timeout out!'
         log.warn(msg)
         stopEvent.set()
@@ -292,7 +325,7 @@ def getRunResult(request, race_id, timeout_secs):
 def setRunResult(request, race_id):
     ''' save results, updates Run, RunPlaces, Current '''
     if request.method=="POST" and request.is_ajax():
-        if request.user.is_authenticated() and request.user.username == 'robb':
+        if isControl(request):
             log.debug("User is authenticated")
             # Example Request body={"0":"2013-12-29 23:12:34.614187:","1":1.279,"2":1.122,"3":1.005,"4":0.895,"5":0.761,"6":0.603,"race_id":1,"run_seq":12,"lane_ct":6}
             data = json.loads(request.body)

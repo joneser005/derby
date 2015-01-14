@@ -1,25 +1,38 @@
 import datetime
+import fcntl
 import logging
+import os
+import random
 import serial
 import threading
 import time
 import sys
-import fcntl
-import os
 
 log = logging.getLogger('runner')
+lanes = 6  # TODO/HACK/FIXME: This code assumes 6 lanes - you can't just change this value!!!!!
+
 
 def laneTimes(result_string):
-    # TODO: later: Move this intoFastTrackResultReader
+    # TODO: later: Move this into FastTrackResultReader
     # Example: A=1.234! B=2.345 C=3.456 D=4.567 E=0.000 F=0.000
     
     # First try!
 #2013-11-25 12:49:30.753042:A=1.831! B=2.053  C=2.158  D=2.258  E=2.366  F=2.511  
 # {0: '2013-11-25 12:49:30.753042:', 1: 1.831, 2: 2.053, 3: 2.158, 4: 2.258, 5: 2.366, 6: 2.511}
 
+# result_string=2015-01-13 21:31:35.431482:4.41579693732=5.3072100027=5.66516712721=3.13101328584=5.6069078248=4.39635514875
+
+    log.debug('result_string={}'.format(result_string))
     lane_times = result_string.translate(None, '!ABCDEF').split('=')
-    result = dict(zip(range(7), lane_times))
-    for n in range(1,7):
+    result = dict(zip(range(lanes+2), lane_times))
+    
+    for x in result:
+        print('x={}, result[x]={}'.format(x, result[x]))
+
+
+    # result = map(float, lanes[1:])
+    # result = [float(result(n)) for n in range(1, lanes+1)]
+    for n in range(1,lanes+1):
         result[n] = float(result[n])
     return result
  
@@ -30,6 +43,59 @@ def resetCBprint():
 def resultsCBprint(result):
     print('DEBUG/DEFAULT: Result: [{}]'.format(result))
     print(laneTimes(result))
+
+class MockFastTrackResultReader(threading.Thread):
+    ''' Mock reader for 
+        Micro Wizard - Fast Track - Model P2 
+        Version string is [P2 VERSION 1.6 ]'''
+    stopEvent = None
+    resetCallback = None
+    resultsCallback = None
+    tracklog = None
+    log = None
+
+    def __init__(self,
+                 stopEvent,
+                 trackSettings = { 'lane_ct' : 6 },
+                 resetCallback=resetCBprint,
+                 resultsCallback=resultsCBprint):
+        
+        log.debug('ENTER MockFastTrackResultReader::__init__')
+        super(MockFastTrackResultReader, self).__init__()
+        self.daemon = True
+        self.stopEvent = stopEvent
+        self.trackSettings = trackSettings
+        self.resetCallback = resetCallback
+        self.resultsCallback = resultsCallback
+        self.tracklog = logging.getLogger('track_reader')
+        log.warn('readers.py: !!!!! Mock reader in use !!!!!')
+        log.debug('EXIT MockFastTrackResultReader::__init__')
+
+    def stop(self):
+        log.info('[MOCK] Stopping....')
+
+    def getMockResult(self):
+        log.info('ENTER getMockResult')
+        time.sleep(2)
+        results = [round(random.uniform(3, 7), 3) for x in range(6)]
+        result = '='+'='.join(map(str, results))
+        log.debug('[MOCK] Result={}'.format(result))
+        log.info('EXIT getMockResult')
+        return result
+    
+    def run(self):
+        log.info('ENTER run')
+        while not self.stopEvent.is_set():
+            log.info('ENTER while not self.stopEvent.is_set():')
+            time.sleep(1)
+            now = datetime.datetime.now()
+            rawResult = self.getMockResult()
+            lastResult = '{:%Y-%m-%d %H:%M:%S.%f}:'.format(now) + rawResult
+            self.tracklog.info(lastResult)
+            self.resultsCallback(lastResult)
+            log.info('[MOCK] run() done!')
+            log.info('EXIT while not self.stopEvent.is_set():')
+        log.info('EXIT run')
 
 class FastTrackResultReader(threading.Thread):
     ''' Micro Wizard - Fast Track - Model P2 
@@ -46,7 +112,7 @@ class FastTrackResultReader(threading.Thread):
 
     def __init__(self,
                  stopEvent,
-                 trackSettings = { 'lane_ct' : 6 },
+                 trackSettings = { 'lane_ct' : lanes },
                  resetCallback=resetCBprint,
                  resultsCallback=resultsCBprint):
         super(FastTrackResultReader, self).__init__()
@@ -57,11 +123,11 @@ class FastTrackResultReader(threading.Thread):
         self.resultsCallback = resultsCallback
 
         self.tracklog = logging.getLogger('track_reader')
-        self.log = logging.getLogger('runner')
-        self.log.debug('self.resetCallback={}'.format(self.resetCallback))
+        log = logging.getLogger('runner')
+        log.debug('self.resetCallback={}'.format(self.resetCallback))
 
     def stop(self):
-        self.log.info('Stopping....')
+        log.info('Stopping....')
 
     def run(self):
         KDSETLED = 0x4B32
@@ -72,11 +138,11 @@ class FastTrackResultReader(threading.Thread):
             console_fd = os.open('/dev/console', os.O_NOCTTY) # for heartbeat - capslock key
         except:
             print 'heartbeat blinky disabled (likely permissions)'
-            self.log.warn('Unable to open console for heartbeat blinky')
+            log.warn('Unable to open console for heartbeat blinky')
 
-        self.log.info('Connecting to track at {}.'.format(self.SERIAL_DEVICE))
+        log.info('Connecting to track at {}.'.format(self.SERIAL_DEVICE))
         with serial.Serial(port=self.SERIAL_DEVICE, baudrate=9600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=self.TIMEOUT) as ser:
-            self.log.info("Connected to: " + ser.portstr)
+            log.info("Connected to: " + ser.portstr)
             currentResult = []
 
             while not self.stopEvent.is_set():
@@ -110,7 +176,7 @@ class FastTrackResultReader(threading.Thread):
                     except:
                         console_fd = None
                         print 'heartbeat blinky disabled (likely permissions)'
-                        self.log.warn('Unable to write to console for heartbeat blinky')
+                        log.warn('Unable to write to console for heartbeat blinky')
             ser.close()
 
 # str = 'A=1.234! B=2.345 C=3.456 D=4.567 E=0.000 F=0.000'

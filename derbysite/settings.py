@@ -227,7 +227,7 @@ LOGGING = {
             'propagate': False
         },
         'track_reader': {
-            'handlers': [#'console',
+            'handlers': ['console',
                          'track_raw_data_file'],
             'level': 'DEBUG',
             'propagate': False
