@@ -26,7 +26,7 @@ class Person(models.Model):
                                                     ('WEBELOS I','WEBELOS I'),
                                                     ('WEBELOS II', 'WEBELOS II'),
                                                     ('None', 'n/a')])
-    picture = models.ImageField(upload_to='people', blank=True, null=True)
+    picture = models.ImageField(upload_to='people', blank=True, null=True, editable=False)
     stamp = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):

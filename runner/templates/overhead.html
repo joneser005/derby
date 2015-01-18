@@ -316,7 +316,7 @@ function updateStandings() {
  *****************************************************************************/
 
 function listenForUpdates() {
-	var RACE_UPDATE_PORT = 8080;
+	var RACE_UPDATE_PORT = 80;
 	var url = 'ws://' + document.location.hostname + ':' + RACE_UPDATE_PORT + '/socket/refresh/';
 
 	console.log('Connecting to ws-refresh at ', url, '...');
@@ -412,12 +412,12 @@ function startup() {
 
 	$("#rundetail_dialog").dialog({
 		height: "auto",
-		width: "90%",
+		width: "auto",
 		modal: true,
 		autoOpen: false,
 		closeOnEscape: true,
 		open: function(event, ui) {
-			setTimeout("$('#rundetail_dialog').dialog('close');", 10000);
+			setTimeout("$('#rundetail_dialog').dialog('close');", 20000);
 		},
 		close: function(event, ui) {
 			scrollToCurrentRun();
@@ -438,11 +438,11 @@ function startup() {
 			<!-- <td colspan="1" class="fine">DB stamp: <span id="last_refresh">last_refresh</span></td> -->
 			<td colspan="2">
 			<button id="toggleScreenToggle">Auto-play</button>
-			<button id="refreshStandings" class="view_standings">Refresh standings</button>
-			<button id="refreshStatus" class="view_status">Refresh status</button>
 			<button id="showStatus" class="view_standings">View current race status</button>
 			<button id="showStandings" class="view_status">View current standings</button>
-			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
+            <button id="testResultDialog" onclick="showResultDialog()">Show last run result</button>
+            <button id="refreshStandings" class="view_standings">Refresh standings (for older browsers)</button>
+            <button id="refreshStatus" class="view_status">Refresh status (for older browsers)</button>
 			<!--  for testing:
 			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
 			<button id="testSpeed" onclick='testSpeed()'>testSpeed</button>

@@ -25,10 +25,9 @@ def laneTimes(result_string):
     log.debug('result_string={}'.format(result_string))
     lane_times = result_string.translate(None, '!ABCDEF').split('=')
     result = dict(zip(range(lanes+2), lane_times))
-    
+
     for x in result:
         print('x={}, result[x]={}'.format(x, result[x]))
-
 
     # result = map(float, lanes[1:])
     # result = [float(result(n)) for n in range(1, lanes+1)]

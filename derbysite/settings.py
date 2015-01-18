@@ -142,12 +142,16 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 INSTALLED_APPS = (
+#     'django_admin_bootstrapped',
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.humanize',

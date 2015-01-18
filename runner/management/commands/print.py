@@ -78,7 +78,7 @@ Print Race Summary and Standings:
         elif 'standings' == action:
             r = Reports()
             race = Race.objects.get(pk=cmd_args[1])
-            r.printStandings(race)
+            r.printStandings(race)  # TODO: Implement me!
         elif 'races' == action:
             self.printRaces()
         elif 'racerrunmatrix' == action:

@@ -285,25 +285,16 @@ def getRunResult(request, race_id, timeout_secs):
     stopEvent.clear()
     race = Race.objects.get(pk=race_id)
 
-
-
-
 #     settings = { 'lane_ct' : race.lane_ct }
     settings = { 'lane_ct' : 6 }  # HACK: Hardcoding lane count, as races with < 6 racers will have this forced down, which will break result reading.
 
+    r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
 
-
-# FIXME - use production trace reader
-#     r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
-
-    log.warn('views.py: !!!!! Using Mock reader !!!!!')
-    log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
-    r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
-    log.info('test')
-    log.debug('r={}'.format(r))
-
-
-
+#     log.warn('views.py: !!!!! Using Mock reader !!!!!')
+#     log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
+#     r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+#     log.info('test')
+#     log.debug('r={}'.format(r))
 
     r.start()
 

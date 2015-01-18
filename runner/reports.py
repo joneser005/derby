@@ -416,9 +416,9 @@ where race.id = %s and rp.seconds > 0
         lane_stats = {}
         for lane in range(1, race.lane_ct+1):
             lane_stat = {}
-            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Avg('seconds')))
-            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Min('seconds')))
-            lane_stat.update(RunPlace.objects.filter(lane=lane).aggregate(Max('seconds')))
+            lane_stat.update(RunPlace.objects.filter(lane=lane, run__race__id=race.id).aggregate(Avg('seconds')))
+            lane_stat.update(RunPlace.objects.filter(lane=lane, run__race__id=race.id).aggregate(Min('seconds')))
+            lane_stat.update(RunPlace.objects.filter(lane=lane, run__race__id=race.id).aggregate(Max('seconds')))
             lane_stats[lane] = lane_stat
 
         print l2
