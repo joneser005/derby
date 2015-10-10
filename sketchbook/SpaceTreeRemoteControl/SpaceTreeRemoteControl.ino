@@ -35,7 +35,7 @@
 // one for each button:
 unsigned long msBtnReset = 0;
 unsigned long lastBtnMs = 0;
-bool resetToReady = false; // set to true by ready btn interrupt
+bool reset_to_ready = false; // set to true by ready btn interrupt
 
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
@@ -50,7 +50,6 @@ Leonardo  ICSP-4        ICSP-1        ICSP-3          -           -
 */
 RF24 radio(PIN_ICSP_CE, PIN_ICSP_CSN);
 
-//byte pipes[][6] = {"1Node","2Node"};
 // Demonstrates another method of setting up the addresses
 byte pipes[][5] = { 0xCC,0xCE,0xCC,0xCE,0xCC , 0xCE,0xCC,0xCE,0xCC,0xCE};
 
@@ -127,8 +126,10 @@ void setup() {
 }
 
 unsigned long previousMillis = 0;
-unsigned long interval = 1000;
-int ledState = HIGH;
+const unsigned long intervalLow = 2000;
+const unsigned long intervalHigh = 200;
+unsigned long interval = intervalLow;
+int ledState = LOW;
 
 void heartbeat() {
   unsigned long currentMillis = millis();
@@ -139,8 +140,10 @@ void heartbeat() {
     // if the LED is off turn it on and vice-versa:
     if (ledState == LOW) {
       ledState = HIGH;
+      interval = intervalHigh;
     } else {
       ledState = LOW;
+      interval = intervalLow;
     }
 
     // set the LED with the ledState of the variable:
@@ -179,26 +182,11 @@ void loop() {
     transmitState(QUERY_STATE);
   }
 
-  if (resetToReady) {
+  if (reset_to_ready) {
     transmitState(STATE_READY);
     state_updated = true;
-    resetToReady = false;
+    reset_to_ready = false;
   }
-/*  
-  Serial.print("2 sec delay...");
-  delay(2000);
-  Serial.println(" Done");
-  transmitState(STATE_SET);
-  delay(2000);
-  transmitState(STATE_GO);
-  delay(2000);
-  transmitState(STATE_FINISH);
-  delay(2000);
-  transmitState(STATE_READY);
-  delay(2000);
-*/
-
-
 
   if (state_updated) {
     // Update remote with signal board's state
@@ -278,46 +266,32 @@ States:
 Unknown state - light first two LEDs + finish
 */
 void setState(sigstat_e newstate) {
-  Serial.println("ENTER setState");
+  if (state == newstate) return;
   Serial.print("  Current state = ");
   Serial.println(getStateStr(state));
   Serial.print("Requested state = ");
   Serial.println(getStateStr(newstate));
 
+  bool updateState = true;
+
   switch (newstate) {
 
     case STATE_PWRON:
       Serial.println("STATE_PWRON");
-//      set_lights(0, strip.Color(COLOR_POWERON));
-      state = newstate;
       break;
 
     case STATE_READY:
       // No validation check - *always* go to ready-state when requested
       Serial.println("case STATE_READY");
-      // flash the lights for fun, then go to COLOR_READY
-      for (int i=0; i<7; i++) {
-//        set_lights(i, strip.Color(255,0,0));
-        delay(50);
-//        set_lights(i, strip.Color(0,0,0));
-      }
-      for (int i=6; i>0; i--) {
-//        set_lights(i, strip.Color(COLOR_READY));
-        delay(50);
-//        set_lights(i, strip.Color(0,0,0));
-      }
-//      set_lights(0, strip.Color(COLOR_READY));
-      state = newstate;
       break;
 
     case STATE_SET:
       Serial.println("STATE_SET");
       if (STATE_READY != state) {
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
-//      set_lights(1, strip.Color(COLOR_SET));
-      state = newstate;
       break;
 
     case STATE_GO:
@@ -325,68 +299,32 @@ void setState(sigstat_e newstate) {
       // Note: We test state after each LED in case the Ready/Reset interrupt 
       if (STATE_SET != state) {
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
-
-      state = newstate;
-//      set_lights(2, strip.Color(COLOR_GO1));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
-      delay(1000); // replace with 1 sec tone
-      if (STATE_SET != state) return;
-//      set_lights(3, strip.Color(COLOR_GO2));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
-      delay(1000); // replace with 1 sec tone
-      if (STATE_SET != state) return;
-//      set_lights(4, strip.Color(COLOR_GO3));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
-      delay(1000); // replace with 1 sec tone
-      if (STATE_SET != state) return;
-//      set_lights(5, strip.Color(COLOR_GO4));
-      tone(PIN_SPEAKER, NOTE_C4, 1200);
       break;
 
     case STATE_FINISH:
       Serial.println("STATE_FINISH");
       if (STATE_GO != state) {
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
-//      set_lights(6, strip.Color(COLOR_FINISH));
-      state = newstate;
       break;
 
     default:
       // Unknown state
       Serial.println("!!!!! UNKNOWN STATE !!!!!");
-//      set_lights(0, strip.Color(0,200,200));
       state = STATE_UNDEF;
       break;
   }
 
-  Serial.print("New current state = ");
-  Serial.println(getStateStr(state));
-  Serial.println("EXIT setState");
-}
-
-void set_lights(uint16_t light_num, uint32_t c) {
-  
-  
-  return;
-
-  /*
-   for (uint16_t i=0; i<7; i++) {
-     if (i == light_num) {
-       strip.setPixelColor(i, c);
-       strip.setPixelColor(13-i, c);
-     } else {
-       strip.setPixelColor(i, 0);
-       strip.setPixelColor(13-i, 0);
-     }
-     
-     strip.show();
-   }
-
-   */
+  if (updateState) {
+    state = newstate;
+    Serial.print("New current state = ");
+    Serial.println(getStateStr(state));
+  }
 }
 
 /*
@@ -400,7 +338,7 @@ void btnResetToReady() {
   // rebounce delay
   if (t - lastBtnMs > BTN_DELAY) {
     state = STATE_READY;
-    resetToReady = true;
+    reset_to_ready = true;
     lastBtnMs = t;
   }
 }
@@ -414,18 +352,6 @@ bool isButtonPressed(uint8_t pin) {
   bool result = false;
   if (LOW == digitalRead(pin)) {
     unsigned long t = millis();
-
-/*    
-      
-    Serial.print("pin=");
-    Serial.print(pin);
-    Serial.print("; t/lastBtnMs=");
-    Serial.print(t);
-    Serial.print("/");
-    Serial.print(lastBtnMs);
-    Serial.print("; diff=");
-    Serial.println(t - lastBtnMs);
-*/    
     if (t - lastBtnMs > BTN_DELAY) { // register as pressed only if rebounce delay is exceeded
       result = true;
       lastBtnMs = t;

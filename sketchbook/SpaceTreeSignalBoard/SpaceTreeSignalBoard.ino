@@ -24,6 +24,11 @@
 #define PIN_ICSP_CSN  8
 #define PIN_LED_DATA  9
 
+
+const unsigned long tone_duration_go_seq1 = 750;
+const unsigned long tone_duration_go_seq2 = 1200;
+const unsigned long go_duration_secs = 10;
+
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
 bool isSignalBoard = 1; // Use 0 as the remote, 1 as the signal board
@@ -37,7 +42,6 @@ Leonardo  ICSP-4        ICSP-1        ICSP-3          -           -
 */
 RF24 radio(PIN_ICSP_CE, PIN_ICSP_CSN);
 
-//byte pipes[][6] = {"1Node","2Node"};
 byte pipes[][5] = { 0xCC,0xCE,0xCC,0xCE,0xCC , 0xCE,0xCC,0xCE,0xCC,0xCE};
 
 /**********************************************************/
@@ -59,7 +63,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(14, PIN_LED_DATA, NEO_GRB + NEO_KHZ8
 
 volatile sigstat_e state;
 volatile sigstat_e pending_state;
-volatile bool stateChanged = false;
+volatile bool force_state_change = false;
 
 void setup() {
   Serial.begin(115200);
@@ -70,8 +74,7 @@ void setup() {
 
   pinMode(PIN_SPEAKER,OUTPUT);
   
-  state = STATE_PWRON;
-  setState(STATE_READY);
+  state = STATE_UNDEF;
   pending_state = STATE_PWRON;
   setState(STATE_PWRON);
 
@@ -110,10 +113,11 @@ void setup() {
 
 void loop() {
 
-  if (pending_state != state) {
+  if (pending_state != state || force_state_change) {
     Serial.println("===== State change detected =====");
     setState(pending_state);
     pending_state = state;
+    force_state_change = false;
   }
 }
 
@@ -141,7 +145,7 @@ void radioInterrupt() {
   
       if ((QUERY_STATE != requested_state && requested_state != state) || requested_state == STATE_READY) {
         pending_state = requested_state;
-        stateChanged = true;
+        force_state_change = true;
       } // else just send back the ack with our current state
   
       // Add an ack packet for the next time around.  (Does this mean the first ack has no payload?)
@@ -174,7 +178,7 @@ States:
 Unknown state - light first two LEDs + finish
 */
 void setState(sigstat_e newstate) {
-  Serial.println("ENTER setState");
+  bool updateState = true;
 
   if (state == newstate && newstate != STATE_READY) return; // always honor a STATE_READY request, its more like a reset
   
@@ -185,13 +189,6 @@ void setState(sigstat_e newstate) {
 
     case STATE_PWRON:
       Serial.println("case STATE_PWRON");
-      set_lights(0, strip.Color(COLOR_POWERON));
-      state = newstate;
-      break;
-
-    case STATE_READY:
-      // No validation check - *always* go to ready-state when requested
-      Serial.println("case STATE_READY");
       // flash the lights for fun, then go to COLOR_READY
       for (int i=0; i<7; i++) {
         set_lights(i, strip.Color(255,0,0));
@@ -203,8 +200,25 @@ void setState(sigstat_e newstate) {
         delay(50);
         set_lights(i, strip.Color(0,0,0));
       }
+      set_lights(0, strip.Color(COLOR_POWERON));
+      break;
+
+    case STATE_READY:
+      // No validation check - *always* go to ready-state when requested
+      Serial.println("case STATE_READY");
+      for (int8_t x=0; x<3; x++) {
+        for (int i=0; i<7; i++) {
+          set_lights(i, strip.Color(0,0,255));
+          //delay(1);
+          set_lights(i, strip.Color(0,0,0));
+        }
+        for (int i=6; i>0; i--) {
+          set_lights(i, strip.Color(COLOR_READY));
+          //delay(1);
+          set_lights(i, strip.Color(0,0,0));
+        }
+      }
       set_lights(0, strip.Color(COLOR_READY));
-      state = newstate;
       break;
 
     case STATE_SET:
@@ -214,51 +228,74 @@ void setState(sigstat_e newstate) {
         break;
       }
       set_lights(1, strip.Color(COLOR_SET));
-      state = newstate;
       break;
 
     case STATE_GO:
       Serial.println("case STATE_GO");
       // Note: We test state after each LED in case the Ready/Reset interrupt 
-      if (STATE_GO != pending_state) {        // Check for reset/ready button/interrupt
+      if (STATE_SET != state) {        // Check for reset/ready button/interrupt
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
 
+      // The GO sequence bits all follow a 3-step pattern: Set state, Wait, Check for reset
+      // (We don't check for reset first b/c the GO button was just pushed)
       Serial.println("case STATE_GO 1");
       set_lights(2, strip.Color(COLOR_GO1));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
+      tone(PIN_SPEAKER, NOTE_C3, tone_duration_go_seq1);
       delay(1000); // replace with 1 sec tone
+      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+        setState(pending_state);
+        updateState = false;
+        break;
+      }
 
       Serial.println("case STATE_GO 2");
-      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(3, strip.Color(COLOR_GO2));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
+      tone(PIN_SPEAKER, NOTE_C3, tone_duration_go_seq1);
       delay(1000); // replace with 1 sec tone
+      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+        setState(pending_state);
+        updateState = false;
+        break;
+      }
 
       Serial.println("case STATE_GO 3");
-      
-      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(4, strip.Color(COLOR_GO3));
-      tone(PIN_SPEAKER, NOTE_C3, 750);
+      tone(PIN_SPEAKER, NOTE_C3, tone_duration_go_seq1);
       delay(1000); // replace with 1 sec tone
+      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+        setState(pending_state);
+        updateState = false;
+        break;
+      }
 
       Serial.println("case STATE_GO 4");
-      
-      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(5, strip.Color(COLOR_GO4));
-      tone(PIN_SPEAKER, NOTE_C4, 1200);
-      state = newstate;
+      tone(PIN_SPEAKER, NOTE_C4, tone_duration_go_seq2);
+      for (uint8_t d=0; d<go_duration_secs; d++) {
+        delay(1000);
+        if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+          noTone(PIN_SPEAKER);
+          setState(pending_state);
+          updateState = false;
+          break;
+        }
+      }
+
+      state = STATE_GO; // HACK for auto-finish (space derby only, mentioned here in case this code gets lifted for PWD, which will have a signal to indicate this)
+      setState(STATE_FINISH);
       break;
 
     case STATE_FINISH:
       Serial.println("case STATE_FINISH");
       if (STATE_GO != state) {
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
       set_lights(6, strip.Color(COLOR_FINISH));
-      state = newstate;
       break;
 
     default:
@@ -269,9 +306,11 @@ void setState(sigstat_e newstate) {
       break;
   }
 
-  Serial.print("New current state = ");
-  Serial.println(getStateStr(state));
-  Serial.println("EXIT setState");
+  if (updateState) {
+    state = newstate;
+    Serial.print("New current state = ");
+    Serial.println(getStateStr(state));
+  }
 }
 
 void set_lights(uint16_t light_num, uint32_t c) {
