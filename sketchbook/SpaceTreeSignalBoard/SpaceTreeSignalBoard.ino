@@ -37,7 +37,8 @@ Leonardo  ICSP-4        ICSP-1        ICSP-3          -           -
 */
 RF24 radio(PIN_ICSP_CE, PIN_ICSP_CSN);
 
-byte pipes[][6] = {"1Node","2Node"};
+//byte pipes[][6] = {"1Node","2Node"};
+byte pipes[][5] = { 0xCC,0xCE,0xCC,0xCE,0xCC , 0xCE,0xCC,0xCE,0xCC,0xCE};
 
 /**********************************************************/
 
@@ -56,23 +57,26 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(14, PIN_LED_DATA, NEO_GRB + NEO_KHZ8
 
 // Moved to ExternDefs.h: typedef enum { STATE_UNDEF, STATE_PWRON = 1, STATE_READY, STATE_SET, STATE_GO, STATE_FINISH = 8 } sigstat_e;  // Reserving 5-7 in case we want to break out the GO sequence into discrete states
 
-sigstat_e state;
-sigstat_e ack_prev_state;
+volatile sigstat_e state;
+volatile sigstat_e pending_state;
+volatile bool stateChanged = false;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("ENTER Signal board setup"));
+  delay(500);
+  Serial.println("ENTER Signal board setup");
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
   pinMode(PIN_SPEAKER,OUTPUT);
   
   state = STATE_PWRON;
-  ack_prev_state = STATE_PWRON;
-  setState(state);
+  setState(STATE_READY);
+  pending_state = STATE_PWRON;
+  setState(STATE_PWRON);
 
   /***** RF24 radio + serial monitor *****/
-  Serial.println(F("RF24 radio initialized"));
+  Serial.println("RF24 radio initialized");
   
   radio.begin();
 
@@ -88,20 +92,29 @@ void setup() {
   radio.openWritingPipe(pipes[1]);
   radio.openReadingPipe(1,pipes[0]);
 
-  attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
-
   // Add an ack packet for the next time around.  (Does this mean the first ack has no payload?)
-  Serial.print(F("Init: Sending ack with current state = "));
+  Serial.print("Init: Priming ack with current state = ");
   Serial.println(getStateStr(state));
-  radio.writeAckPayload(1, &state, sizeof(state));
 
   // Start the radio listening for data
   radio.startListening();
 
-  Serial.println(F("EXIT Signal board setup"));
+  sigstat_e s = state; // wasn't able to cast away the volatile attribute. sp am just copying value into a new var instead
+  radio.writeAckPayload(1, &s, sizeof(s));
+
+  attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, LOW);
+
+  Serial.println("EXIT Signal board setup");
 }
 
+
 void loop() {
+
+  if (pending_state != state) {
+    Serial.println("===== State change detected =====");
+    setState(pending_state);
+    pending_state = state;
+  }
 }
 
 void radioInterrupt() {
@@ -109,39 +122,41 @@ void radioInterrupt() {
   radio.whatHappened(tx_ok, tx_fail, rx_ready);
 
   if (tx_ok) {
-    Serial.println(F("Radio int: tx_ok")); // ack sent
+    Serial.println("Radio int: tx_ok"); // ack sent
   }
 
   if (tx_fail) {
-    Serial.println(F("Radio int: tx_fail")); // failed to send ack
+    Serial.println("Radio int: tx_fail"); // failed to send ack
   }
 
   if (rx_ready) {
-    ack_prev_state = state; // preserve current state so we can send it back to the remote in the ack
-    Serial.println(F("Radio int: rx_ready"));
+    Serial.println("Radio int: rx_ready");
 
     // Get this payload and dump it
-    sigstat_e requested_state;
-    radio.read(&requested_state, sizeof(requested_state));
-    Serial.print(F("Read payload, requested state = "));
-    Serial.println(getStateStr(requested_state));
-
-    if (QUERY_STATE != requested_state) {
-      // Make something happen!
-      setState(requested_state);
-    } // else just send back the ack with our current state
-
-    // Add an ack packet for the next time around.  (Does this mean the first ack has no payload?)
-    Serial.print(F("Sending ack with current state = "));
-    Serial.println(getStateStr(state));
-    radio.writeAckPayload(1, &state, sizeof(state));
+    if (radio.available()) {
+      sigstat_e requested_state;
+      radio.read(&requested_state, sizeof(requested_state));
+      Serial.print("Read payload, requested state = ");
+      Serial.println(getStateStr(requested_state));
+  
+      if ((QUERY_STATE != requested_state && requested_state != state) || requested_state == STATE_READY) {
+        pending_state = requested_state;
+        stateChanged = true;
+      } // else just send back the ack with our current state
+  
+      // Add an ack packet for the next time around.  (Does this mean the first ack has no payload?)
+      sigstat_e s = (QUERY_STATE==requested_state) ? state : requested_state;
+      Serial.print("Setting next ack to requested_state = ");
+      Serial.println(getStateStr(s));
+      radio.writeAckPayload(1, &s, sizeof(s));
+    }
   }
 }
 
 void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
-  Serial.print(F("Invalid state change request. Old = "));
+  Serial.print("Invalid state change request. Old = ");
   Serial.print(getStateStr(oldstate));
-  Serial.print(F(".  New = "));
+  Serial.print(".  New = ");
   Serial.println(getStateStr(newstate));
 }
 
@@ -159,23 +174,24 @@ States:
 Unknown state - light first two LEDs + finish
 */
 void setState(sigstat_e newstate) {
-  Serial.println(F("ENTER setState"));
-  Serial.print(F("  Current state = "));
-  Serial.println(getStateStr(state));
-  Serial.print(F("Requested state = "));
+  Serial.println("ENTER setState");
+
+  if (state == newstate && newstate != STATE_READY) return; // always honor a STATE_READY request, its more like a reset
+  
+  Serial.print("Requested state = ");
   Serial.println(getStateStr(newstate));
 
   switch (newstate) {
 
     case STATE_PWRON:
-      Serial.println(F("case STATE_PWRON"));
+      Serial.println("case STATE_PWRON");
       set_lights(0, strip.Color(COLOR_POWERON));
       state = newstate;
       break;
 
     case STATE_READY:
       // No validation check - *always* go to ready-state when requested
-      Serial.println(F("case STATE_READY"));
+      Serial.println("case STATE_READY");
       // flash the lights for fun, then go to COLOR_READY
       for (int i=0; i<7; i++) {
         set_lights(i, strip.Color(255,0,0));
@@ -192,7 +208,7 @@ void setState(sigstat_e newstate) {
       break;
 
     case STATE_SET:
-      Serial.println(F("case STATE_SET"));
+      Serial.println("case STATE_SET");
       if (STATE_READY != state) {
         printBadStateChange(state, newstate);
         break;
@@ -202,43 +218,41 @@ void setState(sigstat_e newstate) {
       break;
 
     case STATE_GO:
-      Serial.println(F("case STATE_GO"));
+      Serial.println("case STATE_GO");
       // Note: We test state after each LED in case the Ready/Reset interrupt 
-      if (STATE_SET != state) {
+      if (STATE_GO != pending_state) {        // Check for reset/ready button/interrupt
         printBadStateChange(state, newstate);
         break;
       }
 
-      Serial.println(F("case STATE_GO 1"));
-      
+      Serial.println("case STATE_GO 1");
       set_lights(2, strip.Color(COLOR_GO1));
       tone(PIN_SPEAKER, NOTE_C3, 750);
       delay(1000); // replace with 1 sec tone
 
-      Serial.println(F("case STATE_GO 2"));
-      
-      if (STATE_SET != state) return;
+      Serial.println("case STATE_GO 2");
+      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(3, strip.Color(COLOR_GO2));
       tone(PIN_SPEAKER, NOTE_C3, 750);
       delay(1000); // replace with 1 sec tone
 
-      Serial.println(F("case STATE_GO 3"));
+      Serial.println("case STATE_GO 3");
       
-      if (STATE_SET != state) return;
+      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(4, strip.Color(COLOR_GO3));
       tone(PIN_SPEAKER, NOTE_C3, 750);
       delay(1000); // replace with 1 sec tone
 
-      Serial.println(F("case STATE_GO 4"));
+      Serial.println("case STATE_GO 4");
       
-      if (STATE_SET != state) return;
+      if (STATE_GO != pending_state) return;   // Abort on reset/ready button/interrupt
       set_lights(5, strip.Color(COLOR_GO4));
       tone(PIN_SPEAKER, NOTE_C4, 1200);
       state = newstate;
       break;
 
     case STATE_FINISH:
-      Serial.println(F("case STATE_FINISH"));
+      Serial.println("case STATE_FINISH");
       if (STATE_GO != state) {
         printBadStateChange(state, newstate);
         break;
@@ -249,15 +263,15 @@ void setState(sigstat_e newstate) {
 
     default:
       // Unknown state
-      Serial.println(F("case !!!!! UNKNOWN STATE !!!!!"));
+      Serial.println("case !!!!! UNKNOWN STATE !!!!!");
       set_lights(0, strip.Color(0,200,200));
       state = STATE_UNDEF;
       break;
   }
 
-  Serial.print(F("New current state = "));
+  Serial.print("New current state = ");
   Serial.println(getStateStr(state));
-  Serial.println(F("EXIT setState"));
+  Serial.println("EXIT setState");
 }
 
 void set_lights(uint16_t light_num, uint32_t c) {
