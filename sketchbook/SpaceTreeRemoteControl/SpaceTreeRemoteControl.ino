@@ -168,13 +168,12 @@ void setup() {
   pinMode(PIN_RF24_RESERVED, OUTPUT); // see #define PIN_RF24_RESERVED comment
 
   wavbank = audioBankSwitch.getBank(changed);
-//
-//  // initButtonPin does what pinMode(p, INPUT_PULLUP) does, so is safe to convert below 5 to straight pinMode calls *once equivalency is confrimed*
-  initButtonPin(PIN_BTN_RESET_INT);
-  initButtonPin(PIN_BTN_SET);
-  initButtonPin(PIN_BTN_GO);
-  initButtonPin(PIN_BTN_FINISH);
-  initButtonPin(PIN_BTN_QUERY_SIGNAL_BOARD_STATE);
+
+  pinMode(PIN_BTN_RESET_INT, INPUT_PULLUP);
+  pinMode(PIN_BTN_SET, INPUT_PULLUP);
+  pinMode(PIN_BTN_GO, INPUT_PULLUP);
+  pinMode(PIN_BTN_FINISH, INPUT_PULLUP);
+  pinMode(PIN_BTN_QUERY_SIGNAL_BOARD_STATE, INPUT_PULLUP);
   pinMode(PIN_AUTODESTRUCT, INPUT_PULLUP);
   pinMode(PIN_RF_PWR0, INPUT_PULLUP);
   pinMode(PIN_RF_PWR1, INPUT_PULLUP);
@@ -214,7 +213,7 @@ void setup() {
   radio.printDetails();
 
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_BTN_RESET_INT), btnResetToReady, RISING);
+  attachInterrupt(digitalPinToInterrupt(PIN_BTN_RESET_INT), btnResetToReady, FALLING);
 
   lcd.setCursor(0,0); // col, row
   lcd.print("Launch Control: ");
@@ -303,6 +302,7 @@ void check3WaySwitch() {
       lcd.setCursor(0,0); // col, row
       lcd.print("wavbank=");
       lcd.print(wavbank);
+      changed = false;
   }
 }
 
@@ -316,6 +316,7 @@ void check5WaySwitch() {
       lcd.print("RF24 power=");
       lcd.print(p);
       radio.setPALevel(p);
+      changed = false;
   }
 }
 
@@ -511,12 +512,6 @@ void heartbeat() {
 
     digitalWrite(13, ledState);
   }
-}
-
-void initButtonPin(uint8_t p) {
-  pinMode(p, INPUT_PULLUP);
-  //pinMode(p, INPUT);
-  //digitalWrite(p, HIGH);
 }
 
 /* All other buttons handled here */
