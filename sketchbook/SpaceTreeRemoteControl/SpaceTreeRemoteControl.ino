@@ -46,6 +46,7 @@
 // one for each button:
 unsigned long msBtnReset = 0;
 unsigned long lastBtnMs = 0;
+uint8_t lastBtnPin = 0; // use to prevent re-registering a button press on hold
 bool reset_to_ready = false; // set to true by ready btn interrupt
 
 #define HANDLE_TAGS
@@ -200,9 +201,8 @@ void setup() {
     radio.begin();
   
     // Set the PA Level low to prevent power supply related issues
-    // since this is a
-    // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
-    radio.setPALevel(radioPowerSwitch.getPower(changed));
+    check5WaySwitch(changed);
+    changed = false;
     
     radio.enableAckPayload(); // the signal board will send back the current state on query
 //    radio.setAutoAck(true);
@@ -397,13 +397,13 @@ void transmitState(sigstat_e s) {
 }
 
 void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
-  printf("Invalid state change request. Old=%s; New=%s", getStateStr(oldstate), getStateStr(newstate));
+  printf("Invalid state change request. Old=%s; New=%s\r\n", getStateStr(oldstate), getStateStr(newstate));
 }
 
 void setState(sigstat_e newstate) {
   printf("  Current state=%s; Requested state=%s\r\n", getStateStr(state), getStateStr(newstate));
   if (state == newstate && STATE_READY != state) {
-    printf("setState: nothing to do!");
+    printf("setState: nothing to do!\r\n");
     return;
   }
   bool updateState = true;
@@ -481,15 +481,26 @@ This resets the track to zeros, and lights the READY LED.
 This function stands alone becuase it is called via interrupt
 */
 void btnResetToReady() {
-//  typedef enum buttons { btnResetToReady, btnSet, btnGo, btnFinish, btnQuerySignalBoardState, NumberofButtons };
-  unsigned long t = millis();
-  // rebounce delay
-  if (t - lastBtnMs > BTN_DELAY) {
-    state = STATE_READY;
-    reset_to_ready = true;
-    lastBtnMs = t;
-    printf("btnResetToReady pressed\r\n");
+  if (isButtonPressed(PIN_BTN_RESET_INT)) {
+    reset_to_ready = true; // handled in loop()
   }
+}
+
+bool isButtonPressed(uint8_t pin) {
+  bool result = false;
+  if (PIN_BTN_RESET_INT == pin || LOW == digitalRead(pin)) {
+  unsigned long t = millis();
+   // register as pressed only if rebounce delay is exceeded
+  if (   (t - lastBtnMs > BTN_DELAY * 5)
+      || (t - lastBtnMs > BTN_DELAY && pin != lastBtnPin)
+     ) {
+      result = true;
+      lastBtnMs = t;
+      lastBtnPin = pin;
+      printf("Button press on pin %i\r\n", pin);
+    }
+  }
+  return result;
 }
 
 unsigned long previousMillis = 0;
@@ -512,19 +523,6 @@ void heartbeat() {
 
     digitalWrite(13, ledState);
   }
-}
-
-/* All other buttons handled here */
-bool isButtonPressed(uint8_t pin) {
-  bool result = false;
-  if (LOW == digitalRead(pin)) {
-    unsigned long t = millis();
-    if (t - lastBtnMs > BTN_DELAY) { // register as pressed only if rebounce delay is exceeded
-      result = true;
-      lastBtnMs = t;
-    }
-  }
-  return result;
 }
 
 void radioFlushHack() {

@@ -119,7 +119,7 @@ void play(sigstat_e s) {
 }
 
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(115200);
 
 // DEBUG only
   while (!Serial);
@@ -150,8 +150,8 @@ void setup() {
 //  radio.setRetries(15,15);
 //  radio.setPayloadSize(sizeof(sigstat_e));
   radio.openReadingPipe(1,pipe);
-  sigstat_e s = STATE_PWRON;
   radio.startListening();
+//  sigstat_e s = STATE_PWRON;
 //  radio.writeAckPayload(1, &s, sizeof(s));
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
   radio.printDetails();
@@ -253,17 +253,6 @@ void setState(sigstat_e newstate) {
 
     case STATE_PWRON:
       printf("case STATE_PWRON\r\n");
-//      // flash the lights for fun, then go to COLOR_READY
-//      for (int i=0; i<7; i++) {
-//        set_lights(i, strip.Color(255,0,0));
-//        delay(50);
-//        set_lights(i, strip.Color(0,0,0));
-//      }
-//      for (int i=6; i>0; i--) {
-//        set_lights(i, strip.Color(COLOR_READY));
-//        delay(50);
-//        set_lights(i, strip.Color(0,0,0));
-//      }
       set_lights(0, strip.Color(COLOR_POWERON));
       break;
 
@@ -287,6 +276,7 @@ void setState(sigstat_e newstate) {
       printf("case STATE_SET\r\n");
       if (STATE_READY != state) {
         printBadStateChange(state, newstate);
+        updateState = false;
         break;
       }
       set_lights(1, strip.Color(COLOR_SET));
