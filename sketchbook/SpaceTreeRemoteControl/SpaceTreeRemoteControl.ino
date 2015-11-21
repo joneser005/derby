@@ -10,6 +10,7 @@
 #include "ExternDefs.h"
 #include "AudioBankSwitch.h"
 #include "RadioPowerSwitch.h"
+#include "AutoDestruct.h"
 
 #define PIN_RADIO_INT                     2    /* interrupt pins vary by board, 2 ... */
 #define PIN_BTN_RESET_INT                 3 // pushed when high /*  ... and 3 are good for Leo and Mega  */
@@ -52,69 +53,27 @@ bool reset_to_ready = false; // set to true by ready btn interrupt
 #define HANDLE_TAGS
 //#define USE_TIMER2
 #define DISABLE_SPEAKER2
-#define WAV_ARR_SIZE 20
+#define WAV_ARR_SIZE 18
 
-char *wavarray[][WAV_ARR_SIZE] = {
-  { "0/NOTFUNCTIONAL.wav",
-    "0/PWRON.wav",
-    "0/RESET.wav",
-    "0/ARMED.wav",
-    "0/LAUNCH.wav",
-    "0/AUTODESTRUCT_INSTRUCT.wav",
-    "0/AUTODESTRUCT_CONF.wav",
-    "0/AUTODESTRUCT_WRONGBTN.wav",
-    "0/AUTODESTRUCT_ENGAGED.wav",
-    "0/AUTODESTRUCT_DISENGAGED.wav",
-    "0/RADIO_OFF.wav",
-    "0/RADIO_PWR.wav",
-    "0/LOW.wav",
-    "0/MED.wav",
-    "0/OTHERMED.wav",
-    "0/HI.wav",
-    "0/BANK0.wav",
-    "0/BANK1.wav",
-    "0/BANK2.wav",
-    "0/FAULT.wav"},
-  { "1/NOTFUNCTIONAL.wav",
-    "1/PWRON.wav",
-    "1/RESET.wav",
-    "1/ARMED.wav",
-    "1/LAUNCH.wav",
-    "0/AUTODESTRUCT_INSTRUCT.wav",
-    "0/AUTODESTRUCT_CONF.wav",
-    "0/AUTODESTRUCT_WRONGBTN.wav",
-    "0/AUTODESTRUCT_ENGAGED.wav",
-    "0/AUTODESTRUCT_DISENGAGED.wav",
-    "1/RADIO_OFF.wav",
-    "1/RADIO_PWR.wav",
-    "1/LOW.wav",
-    "1/MED.wav",
-    "1/OTHERMED.wav",
-    "1/HI.wav",
-    "1/BANK0.wav",
-    "1/BANK1.wav",
-    "1/BANK2.wav",
-    "1/FAULT.wav"},
-  { "2/NOTFUNCTIONAL.wav",
-    "2/PWRON.wav",
-    "2/RESET.wav",
-    "2/ARMED.wav",
-    "2/LAUNCH.wav",
-    "0/AUTODESTRUCT_INSTRUCT.wav",
-    "0/AUTODESTRUCT_CONF.wav",
-    "0/AUTODESTRUCT_WRONGBTN.wav",
-    "0/AUTODESTRUCT_ENGAGED.wav",
-    "0/AUTODESTRUCT_DISENGAGED.wav",
-    "2/RADIO_OFF.wav",
-    "2/RADIO_PWR.wav",
-    "2/LOW.wav",
-    "2/MED.wav",
-    "2/OTHERMED.wav",
-    "2/HI.wav",
-    "2/BANK0.wav",
-    "2/BANK1.wav",
-    "2/BANK2.wav",
-    "2/FAULT.wav"}
+char *wavarray[WAV_ARR_SIZE] = {
+    "NOTFUNCTIONAL.wav",
+    "PWRON.wav",
+    "RESET.wav",
+    "ARMED.wav",
+    "LAUNCH.wav",
+    "AUTODESTRUCT_INSTRUCT.wav",
+    "AUTODESTRUCT_WRONGBTN.wav",
+    "AUTODESTRUCT_ENGAGED.wav",
+    "AUTODESTRUCT_DISENGAGED.wav",
+    "RADIO_PWR.wav",
+    "LOW.wav",
+    "OTHERLOW.wav",
+    "MED.wav",
+    "HI.wav",
+    "FULL.wav",
+    "BANK0.wav",
+    "BANK1.wav",
+    "BANK2.wav"
 };
 TMRpcm tmrpcm;
 
@@ -141,21 +100,16 @@ RadioPowerSwitch radioPowerSwitch(rppins);
 volatile sigstat_e state;
 volatile bool state_updated = false;
 LiquidCrystal lcd(PIN_LCD_RS, PIN_LCD_E, PIN_LCD_D4,  PIN_LCD_D5, PIN_LCD_D6, PIN_LCD_D7);
+AutoDestruct ad(lcd, PIN_AUTODESTRUCT, PIN_BTN_SET, PIN_BTN_GO);  
+
 bool initFromSignalBoard = false;
 
 void heartbeat();
 void initButtonPin(uint8_t p);
 void radioFlushHack();
 void updateRemoteStateFromSignalBoardState();
-void play(int bank, int);
-void playState(sigstat_e s);
+void playWav(remote_sounds_type i);
 
-bool inAutoDestructMode = false;
-bool autoDestructConfirmRequested = false;
-
-unsigned long dtAutoDStarted = 0; // hard-coded ten-second delay, countdown the last 5 seconds
-bool countdown [] = { 0,0,0,0,0,0 }; // set to true as each remaining second (5..4..3..2..1..Boom!) is read aloud; 0 == Boom!
-uint8_t wavbank = 0; // sound bank, to select wav set
 bool changed = false; // misc local/multi
 
 void setup() {
@@ -167,9 +121,6 @@ void setup() {
   lcd.print("Initializing...");
   pinMode(13, OUTPUT);
   pinMode(PIN_RF24_RESERVED, OUTPUT); // see #define PIN_RF24_RESERVED comment
-
-  wavbank = audioBankSwitch.getBank(changed);
-
   pinMode(PIN_BTN_RESET_INT, INPUT_PULLUP);
   pinMode(PIN_BTN_SET, INPUT_PULLUP);
   pinMode(PIN_BTN_GO, INPUT_PULLUP);
@@ -183,14 +134,6 @@ void setup() {
   pinMode(PIN_WAV_BANK1, INPUT_PULLUP);
   pinMode(PIN_WAV_BANK2, INPUT_PULLUP);
 
-  tmrpcm.speakerPin = PIN_SPEAKER;
-  if (!SD.begin(PIN_SD_CS)) {  // see if the card is present and can be initialized:
-    printf("SD fail\r\n");  
-  } else {
-    printf("SD OK\r\n");  
-    tmrpcm.setVolume(3);
-  }
-
   state = STATE_UNDEF;
   sigstat_e s = STATE_PWRON;
   setState(STATE_PWRON);
@@ -201,8 +144,9 @@ void setup() {
     radio.begin();
   
     // Set the PA Level low to prevent power supply related issues
-    check5WaySwitch(changed);
-    changed = false;
+    //check5WaySwitch();
+    radio.setPALevel(RF24_PA_LOW);
+    changed = false; // shared global :-|
     
     radio.enableAckPayload(); // the signal board will send back the current state on query
 //    radio.setAutoAck(true);
@@ -212,8 +156,16 @@ void setup() {
   
   radio.printDetails();
 
+  tmrpcm.speakerPin = PIN_SPEAKER;
+  if (!SD.begin(PIN_SD_CS)) {  // see if the card is present and can be initialized:
+    printf("SD fail\r\n");  
+  } else {
+    printf("SD OK\r\n");  
+    tmrpcm.setVolume(3);
+  }
+
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_BTN_RESET_INT), btnResetToReady, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_BTN_RESET_INT), btnResetToReady, RISING);
 
   lcd.setCursor(0,0); // col, row
   lcd.print("Launch Control: ");
@@ -252,8 +204,7 @@ void loop() {
   } else if (isButtonPressed(PIN_BTN_QUERY_SIGNAL_BOARD_STATE)) {
     transmitState(QUERY_STATE);
   } else {
-    checkAutoDestruct();
-    
+    ad.check();
     check3WaySwitch(); // wav bank
     check5WaySwitch(); // radio power
   }
@@ -266,43 +217,24 @@ void loop() {
   }
 }
 
-// manual mode is for auto-destruct
-void checkAutoDestruct() {
-  if (LOW == digitalRead(PIN_AUTODESTRUCT) && !inAutoDestructMode) {
-    inAutoDestructMode = true;
-    lcd.clear();
-    lcd.print("AUTO-DESTRUCT");
-    lcd.setCursor(0,1);
-    lcd.print("[RED to confirm]");
-    playWav(WAV_AUTODESTRUCT_INSTRUCT);
-  } else if (HIGH == digitalRead(PIN_AUTODESTRUCT) && inAutoDestructMode) {
-    inAutoDestructMode = false;
-    lcd.clear();
-    lcd.print("AUTO-DESTRUCT");
-    lcd.setCursor(0,1);
-    lcd.print("[ CANCELLED ]");
-    playWav(WAV_AUTODESTRUCT_DISENGAGED);
-    for (uint8_t i=0; i<6; i++) {
-      countdown[i] = 0;
-    }
-//  } else if (inAutoDestructMode && !autoDestructConfirmRequested) {
-//    autoDestructConfirmRequested = true;
-//    playWav(WAV_AUTODESTRUCT_CONF);
-//  } else // TODO if (
-    //unsigned long dtAutoDStarted = 0; // hard-coded ten-second delay, countdown the last 5 seconds
-  }
-}
-
 // Wav bank
 void check3WaySwitch() {
-  wavbank = audioBankSwitch.getBank(changed);
+  uint8_t wavbank = audioBankSwitch.getBank(changed);
   if (changed) {
-      lcd.setCursor(0,0); // col, row
-      lcd.print("                ");
-      lcd.setCursor(0,0); // col, row
-      lcd.print("wavbank=");
-      lcd.print(wavbank);
-      changed = false;
+    changed = false;
+    lcd.setCursor(0,0); // col, row
+    lcd.print("                ");
+    lcd.setCursor(0,0); // col, row
+    lcd.print("wavbank=");
+    lcd.print(wavbank);
+
+    printf("Sending wavbank to remote: %s\r\n", wavbank);
+    char wb[3]; 
+    String str;
+    str = String("wb"+wavbank);
+    str.toCharArray(wb,2);
+    radio.startWrite(&wb, 3);
+    radioFlushHack();
   }
 }
 
@@ -317,6 +249,8 @@ void check5WaySwitch() {
       lcd.print(p);
       radio.setPALevel(p);
       changed = false;
+      delay(10);
+      radio.printDetails();
   }
 }
 
@@ -325,12 +259,7 @@ void msg(const char * m) {
 }
 
 void playWav(remote_sounds_type i) {
-  playWav(wavbank, i);
-}
-
-void playWav(int bank, remote_sounds_type i) {
-// TODO: Re-enable when we get a working SD card
-//  tmrpcm.play(wavarray[bank][i]);
+  tmrpcm.play(wavarray[i]);
 }
 
 void playState(sigstat_e s) {
@@ -486,9 +415,16 @@ void btnResetToReady() {
   }
 }
 
+/*
+ * PIN_BTN_RESET_INT fires via interrupt, so if we see it here, we already know
+ * it was pressed.  This code is still needed for debounce handling.
+ * PIN_BTN_GO is wired to an always closed switch, so we just hard-coded the
+ * exception to the rule here vs. a more elegant solution.
+ */
 bool isButtonPressed(uint8_t pin) {
   bool result = false;
-  if (PIN_BTN_RESET_INT == pin || LOW == digitalRead(pin)) {
+  if (   PIN_BTN_RESET_INT == pin 
+      || ((PIN_BTN_GO == pin) ? HIGH : LOW) == digitalRead(pin)) {
   unsigned long t = millis();
    // register as pressed only if rebounce delay is exceeded
   if (   (t - lastBtnMs > BTN_DELAY * 5)
@@ -498,6 +434,8 @@ bool isButtonPressed(uint8_t pin) {
       lastBtnMs = t;
       lastBtnPin = pin;
       printf("Button press on pin %i\r\n", pin);
+
+      ad.checkConfirm(pin);
     }
   }
   return result;
@@ -551,5 +489,18 @@ void updateRemoteStateFromSignalBoardState() {
   radioFlushHack();
   // interrupt handler will update the state from the ack received from the signalboard
 //  printf("EXIT updateRemoteStateFromSignalBoardState()\r\n");
+}
+
+const char * getStateStr(sigstat_e s) {
+  switch (s) {
+    case STATE_PWRON: return "STATE_PWRON";
+    case STATE_READY: return "STATE_READY";
+    case STATE_SET: return "STATE_SET";
+    case STATE_GO: return "STATE_GO"; // The three STATE_PRE_GO_n states are purely transitional, for the countdown, and are not regarded as signal board states
+    case STATE_FINISH: return "STATE_FINISH";
+    case STATE_UNDEF: return "STATE_UNDEF";
+    case QUERY_STATE: return "*QUERY_STATE"; // not really a state, used to query current state
+    default: return "*UNKNOWN STATE*";
+  }
 }
 

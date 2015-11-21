@@ -1,4 +1,5 @@
 #include "AudioBankSwitch.h"
+#include "ExternDefs.h"
 
 AudioBankSwitch::AudioBankSwitch(uint8_t p0, uint8_t p1, uint8_t p2) :
   _p0(p0), _p1(p1), _p2(p2) { }

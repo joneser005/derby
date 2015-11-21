@@ -122,7 +122,7 @@ void setup() {
   Serial.begin(115200);
 
 // DEBUG only
-  while (!Serial);
+//  while (!Serial);
   
   printf_begin();
   printf("+setup\r\n");
@@ -130,8 +130,6 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-//  digitalWrite(PIN_SD_CS, HIGH);
-  
 #ifdef ENABLE_WAV
   tmrpcm.speakerPin = PIN_SPEAKER;
 #else
