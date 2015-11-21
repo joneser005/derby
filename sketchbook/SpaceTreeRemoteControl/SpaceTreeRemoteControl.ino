@@ -65,7 +65,7 @@ char *wavarray[WAV_ARR_SIZE] = {
     "AUTODESTRUCT_WRONGBTN.wav",
     "AUTODESTRUCT_ENGAGED.wav",
     "AUTODESTRUCT_DISENGAGED.wav",
-    "RADIO_PWR.wav",
+    "RADIO_PWR.wav",  // DO NOT USE (no file)
     "LOW.wav",
     "OTHERLOW.wav",
     "MED.wav",
@@ -161,7 +161,7 @@ void setup() {
     printf("SD fail\r\n");  
   } else {
     printf("SD OK\r\n");  
-    tmrpcm.setVolume(3);
+    tmrpcm.setVolume(6); // 7 (max) sounds terrible
   }
 
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
@@ -171,6 +171,8 @@ void setup() {
   lcd.print("Launch Control: ");
   lcd.setCursor(0,1);
   lcd.print("[ OPERATIONAL ] ");
+
+  playWav(WAV_PWRON);
 
   printf("EXIT remote control setup\r\n");
 }
@@ -222,34 +224,51 @@ void check3WaySwitch() {
   uint8_t wavbank = audioBankSwitch.getBank(changed);
   if (changed) {
     changed = false;
-    lcd.setCursor(0,0); // col, row
-    lcd.print("                ");
-    lcd.setCursor(0,0); // col, row
-    lcd.print("wavbank=");
-    lcd.print(wavbank);
 
-    printf("Sending wavbank to remote: %s\r\n", wavbank);
-    char wb[3]; 
-    String str;
-    str = String("wb"+wavbank);
-    str.toCharArray(wb,2);
-    radio.startWrite(&wb, 3);
-    radioFlushHack();
+    printf("Sending wavbank to remote: %i\r\n", wavbank);
+    // HACK: WAV_BANK0-2 have been copied into sigstat_e for easy of transfer to the sigboard, postfixed with _STATE
+    switch (wavbank) {
+      case 0:
+        playWav(WAV_BANK0);
+        transmitState(WAV_BANK0_STATE);
+        break;
+      case 1:
+        playWav(WAV_BANK1);
+        transmitState(WAV_BANK1_STATE);
+        break;
+      case 2:
+        playWav(WAV_BANK2);
+        transmitState(WAV_BANK2_STATE);
+        break;
+    }
+
   }
 }
 
 // Radio power
 void check5WaySwitch() {
-  rf24_pa_dbm_e p = radioPowerSwitch.getPower(changed);
+  uint8_t pos = radioPowerSwitch.getSwitchPosition();
+  rf24_pa_dbm_e power = radioPowerSwitch.getPower(changed);
   if (changed) {
-      lcd.setCursor(0,1); // col, row
-      lcd.print("                ");
-      lcd.setCursor(0,1); // col, row
-      lcd.print("RF24 power=");
-      lcd.print(p);
-      radio.setPALevel(p);
+      radio.setPALevel(power);
       changed = false;
-      delay(10);
+      switch (pos) {
+        case 0:
+          playWav(WAV_LOW);
+          break;
+        case 1:
+          playWav(WAV_OTHERLOW);
+          break;
+        case 2:
+          playWav(WAV_MED);
+          break;
+        case 3:
+          playWav(WAV_HI);
+          break;
+        case 4:
+          playWav(WAV_FULL);
+          break;
+      }
       radio.printDetails();
   }
 }
@@ -259,7 +278,9 @@ void msg(const char * m) {
 }
 
 void playWav(remote_sounds_type i) {
+  printf("%s\r\n", wavarray[i]);
   tmrpcm.play(wavarray[i]);
+  while (tmrpcm.isPlaying());
 }
 
 void playState(sigstat_e s) {
@@ -350,6 +371,7 @@ void setState(sigstat_e newstate) {
       lcd.print("Launch sequence:");
       lcd.setCursor(0,1);
       lcd.print("---- RESET ----");
+//      playWav(WAV_RESET);
       break;
 
     case STATE_SET:
@@ -363,6 +385,7 @@ void setState(sigstat_e newstate) {
       lcd.print("Launch sequence:");
       lcd.setCursor(0,1);
       lcd.print("**** ARMED ****");
+//      playWav(WAV_ARMED);
       break;
 
     case STATE_GO:
@@ -377,6 +400,7 @@ void setState(sigstat_e newstate) {
       lcd.print("Launch sequence:");
       lcd.setCursor(0,1);
       lcd.print("!!!!!! GO !!!!!!");
+//      playWav(WAV_LAUNCH);
       break;
 
     case STATE_FINISH:

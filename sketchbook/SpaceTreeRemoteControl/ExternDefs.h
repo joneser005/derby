@@ -11,7 +11,11 @@ typedef enum {
     STATE_PRE_GO_3, 
     STATE_GO, 
     STATE_FINISH, 
-    QUERY_STATE } sigstat_e;  // keep 0-n ordering, as these are also used as array indices
+    QUERY_STATE, 
+    WAV_BANK0_STATE,
+    WAV_BANK1_STATE,
+    WAV_BANK2_STATE
+} sigstat_e;  // keep 0-n ordering, as these are also used as array indices
 
 #ifdef IS_REMOTE_CTRL
 // Note these must match the order in wavarray[][]

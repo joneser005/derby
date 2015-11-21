@@ -38,20 +38,17 @@ void radioInterrupt();
 #define PIN_RADIO_CS       8
 #define PIN_SD_CS          11
 
-#define PIN_ROLE_SELECT 12 /* for ping-ping example */
-// 2nd time around:
-// pin 9  works, but also hums (a signal or interference)
-// pin 5  works, but also hums (a signal or interference)
-// pin 3  fails, and also hums (a signal or interference)
-// pin 6  fails, and also hums (a signal or interference)
-// pin 10 works, but also hums (a signal or interference)
-
 #ifdef ENABLE_WAV
   #define HANDLE_TAGS
   //#define USE_TIMER2
   #define DISABLE_SPEAKER2
-  char *wavarray[][10] = {
+  char *wavarray[3][10] = {
+    // 0 = cylon
+    { "0/notfunct.wav", "0/powerup.wav", "0/ready.wav", "0/set.wav", "0/go1.wav", "0/go2.wav", "0/go3.wav", "0/gooooo.wav", "0/finish.wav", "0/query.wav" },
+    // 1 = lasers or whatever
     { "1/notfunct.wav", "1/powerup.wav", "1/ready.wav", "1/set.wav", "1/go1.wav", "1/go2.wav", "1/go3.wav", "1/gooooo.wav", "1/finish.wav", "1/query.wav" },
+    // 2 = normal sounds
+    { "2/notfunct.wav", "2/powerup.wav", "2/ready.wav", "2/set.wav", "2/go1.wav", "2/go2.wav", "2/go3.wav", "2/gooooo.wav", "2/finish.wav", "2/query.wav" }
   };
   TMRpcm tmrpcm;
 #else
@@ -59,7 +56,7 @@ void radioInterrupt();
   const unsigned long tone_duration_go_seq2 = 1200;
 #endif
 const unsigned long go_duration_secs = 10;
-uint8_t bank = 0; // sound bank, to select wav set
+uint8_t bank = 2; // sound bank, to select wav set
 
 volatile bool query = false;
 
@@ -91,6 +88,7 @@ volatile bool force_state_change = false;
 #ifdef ENABLE_WAV
   void playWav(int bank, sigstat_e s) {
     tmrpcm.play(wavarray[bank][s]);
+    while (tmrpcm.isPlaying()); // don't do anything else while playing wavs (hoping this helps with the occasssional lockup)
   }
 #endif
 
@@ -125,7 +123,7 @@ void setup() {
 //  while (!Serial);
   
   printf_begin();
-  printf("+setup\r\n");
+//  printf("+setup\r\n");
 
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
@@ -137,7 +135,7 @@ void setup() {
 #endif
 
   /***** RF24 radio + serial monitor *****/
-  printf("RF24 init\r\n");
+//  printf("RF24 init\r\n");
   radio.begin();
   // Set the PA Level low to prevent power supply related issues since this is a
   // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
@@ -159,7 +157,7 @@ void setup() {
     printf("SD fail\r\n");  
   } else {
     printf("SD OK\r\n");  
-    tmrpcm.setVolume(3);
+    tmrpcm.setVolume(5);
   }
 #endif
 
@@ -167,7 +165,7 @@ void setup() {
   pending_state = STATE_PWRON;
   setState(STATE_PWRON);
 
-  printf("-setup\r\n");
+//  printf("-setup\r\n");
 }
 
 void loop() {
@@ -180,9 +178,7 @@ void loop() {
     query = false;
     play(QUERY_STATE);
   }
-  delay(250);
-
-//  Serial.print(".");
+//  delay(250);
 }
 
 void radioInterrupt() {
@@ -216,11 +212,7 @@ void radioInterrupt() {
 }
 
 void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
-  printf("Bad state ");
-  printf(getStateStr(oldstate));
-  printf(" => ");
-  printf(getStateStr(newstate));
-  printf("\r\n");
+  printf("Bad st chg %s>%s\r\n", getStateStr(oldstate), getStateStr(newstate));
 }
 
 /*
@@ -243,20 +235,18 @@ void setState(sigstat_e newstate) {
 
   if (state == newstate && newstate != STATE_READY) return; // always honor a STATE_READY request, its more like a reset
   
-  printf("Req state=");
-  printf(getStateStr(newstate));
-  printf("\r\n");
+  printf("Req=%s\r\n", getStateStr(newstate));
 
   switch (newstate) {
 
     case STATE_PWRON:
-      printf("case STATE_PWRON\r\n");
+//      printf("case STATE_PWRON\r\n");
       set_lights(0, strip.Color(COLOR_POWERON));
       break;
 
     case STATE_READY:
       // No validation check - *always* go to ready-state when requested
-      printf("case STATE_READY\r\n");
+//      printf("case STATE_READY\r\n");
       for (int8_t x=0; x<3; x++) {
         for (int i=0; i<7; i++) {
           set_lights(i, strip.Color(0,0,255));
@@ -271,7 +261,7 @@ void setState(sigstat_e newstate) {
       break;
 
     case STATE_SET:
-      printf("case STATE_SET\r\n");
+//      printf("case STATE_SET\r\n");
       if (STATE_READY != state) {
         printBadStateChange(state, newstate);
         updateState = false;
@@ -281,7 +271,7 @@ void setState(sigstat_e newstate) {
       break;
 
     case STATE_GO:
-      printf("case STATE_GO\r\n");
+//      printf("case STATE_GO\r\n");
       // Note: We test state after each LED in case the Ready/Reset interrupt 
       if (STATE_SET != state) {        // Check for reset/ready button/interrupt
         printBadStateChange(state, newstate);
@@ -291,37 +281,37 @@ void setState(sigstat_e newstate) {
 
       // The GO sequence bits all follow a 3-step pattern: Set state, Wait, Check for reset
       // (We don't check for reset first b/c the GO button was just pushed)
-      printf("case GO 1\r\n");
+//      printf("case GO 1\r\n");
       set_lights(2, strip.Color(COLOR_GO1));
       play(bank, STATE_PRE_GO_1);
-      delay(1000); // replace with 1 sec tone
+//      delay(1000); // replace with 1 sec tone
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         updateState = false;
         break;
       }
 
-      printf("case GO 2\r\n");
+//      printf("case GO 2\r\n");
       set_lights(3, strip.Color(COLOR_GO2));
       play(bank, STATE_PRE_GO_2);
-      delay(1000); // replace with 1 sec tone
+//      delay(1000); // replace with 1 sec tone
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         updateState = false;
         break;
       }
 
-      printf("case GO 3\r\n");
+//      printf("case GO 3\r\n");
       set_lights(4, strip.Color(COLOR_GO3));
       play(bank, STATE_PRE_GO_3);
-      delay(1000); // replace with 1 sec tone
+//      delay(1000); // replace with 1 sec tone
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         updateState = false;
         break;
       }
 
-      printf("case GO 4\r\n");
+//      printf("case GO 4\r\n");
       set_lights(5, strip.Color(COLOR_GO4));
       play(bank, STATE_GO);
       for (uint8_t d=0; d<go_duration_secs; d++) {
@@ -332,14 +322,15 @@ void setState(sigstat_e newstate) {
           break;
         }
       }
-
-      state = STATE_GO; // HACK for auto-finish (space derby only, mentioned here in case this code gets lifted for PWD, which will have a signal to indicate this)
-      setState(STATE_FINISH);
-      updateState = false; // so we don't override prior stmt
+      if (STATE_READY != state) {
+        state = STATE_GO; // HACK for auto-finish (space derby only, mentioned here in case this code gets lifted for PWD, which will have a signal to indicate this)
+        setState(STATE_FINISH);
+        updateState = false; // so we don't override prior stmt
+      }
       break;
 
     case STATE_FINISH:
-      printf("case STATE_FINISH\r\n");
+//      printf("case STATE_FINISH\r\n");
       if (STATE_GO != state) {
         printBadStateChange(state, newstate);
         updateState = false;
@@ -349,9 +340,24 @@ void setState(sigstat_e newstate) {
       play(STATE_FINISH);
       break;
 
+    case WAV_BANK0_STATE:
+      bank = 0;
+      printf("w0\r\n");
+      break;
+
+    case WAV_BANK1_STATE:
+      bank = 1;
+      printf("w1\r\n");
+      break;
+
+    case WAV_BANK2_STATE:
+      bank = 2;
+      printf("w2\r\n");
+      break;
+
     default:
       // Unknown state
-      printf("case UNKSTATE\r\n");
+//      printf("case UNKSTATE\r\n");
       set_lights(0, strip.Color(0,200,200));
       state = STATE_UNDEF;
       play(state);
@@ -360,10 +366,8 @@ void setState(sigstat_e newstate) {
 
   if (updateState) {
     state = newstate;
-    printf("New state=");
-    printf(getStateStr(state));
-    printf("\r\n~");
-    play(state); // handles all but the go-sequence pseudo-states
+    printf("New st=%s\r\n", getStateStr(state));
+    play(state); // handles all but the go-sequence
   }
 }
 
