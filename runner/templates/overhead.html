@@ -262,20 +262,31 @@ function updateStandings() {
 		for (i = 0; i < data.length; i++) {
 			if (data[i].average != placeCounts[0][2]) placeCounts[0][1]++;
 			placeCounts[0][2] = data[i].average;
-			$("#tblStandingsAll").append(getStandingsRow(data[i], placeCounts[0][1], (i%2), 'all'));
 			var rankInd = 0; // Tiger=1, Wolf, Bear, WI, WII=5
 			if ("Tiger" == data[i].rank) rankInd = 1;
 			else if ("Wolf" == data[i].rank) rankInd = 2;
 			else if ("Bear" == data[i].rank) rankInd = 3;
 			else if ("WEBELOS I" == data[i].rank) rankInd = 4;
 			else if ("WEBELOS II" == data[i].rank) rankInd = 5;
+			/* else if ("None" == data[i].rank) {
+			FIXME: Assign None/other to rankInd 6 (currently zero, which is reserved for the overall standings bucket, hence the if (rankInd > 0) block, a few lines later/below)
+			Problem is, we don't yet have a [6] rank to hold/show results
+			Of course, we could just leave it as-is (rankInd==0) and just ontinue to filter out from overall results, per below
+				rankInd = 6;
+				data[i].
+			*/
 			if (data[i].average != placeCounts[rankInd][2]) placeCounts[rankInd][1]++;
 			placeCounts[rankInd][2] = data[i].average;
-			$(placeCounts[rankInd][0]).append(
-				getStandingsRow(
-					data[i],
-					placeCounts[rankInd][1],
-					placeCounts[rankInd][1] % 2, ''));
+			
+			$("#tblStandingsAll").append(getStandingsRow(data[i], placeCounts[0][1], (i%2), 'all')); /* placeCounts[0][*] are for overall standings */
+			if (rankInd > 0) { // DEC2015: skip 'other' (rankInd is zero) else we inadvertently add the standings row to the overall standings tab (again) 
+				$(placeCounts[rankInd][0]).append(
+					getStandingsRow(
+						data[i],
+						placeCounts[rankInd][1],
+						placeCounts[rankInd][1] % 2, ''));
+			}
+			
 			var pb = '#progress-' + data[i].racer_id + 'all';
 			var pbl = '#proglabel-' + data[i].racer_id + 'all';
 			$(pbl).text(String(data[i].count+"/{{ lane_ct }}"));
