@@ -290,7 +290,7 @@ function updateStatus(nocache) {
 		console.log("data.runs=",data.runs);
 		console.log("data.runs.length=",data.runs.length);
 		for (i = 1; i <= data.runs.length; i++) {
-			htmlAllRuns += renderRun(data, i, reversed=true, detailed=true);
+			htmlAllRuns += renderRun(data, i, reversed=isReversed, detailed=true);
 		}
 		$('#run_all').find("tr").remove();
 		console.log(htmlAllRuns);
@@ -298,7 +298,6 @@ function updateStatus(nocache) {
 		$("button").button();
 		listenForTrackResultsStop(data['current_run_seq']); /* ideally, nobody refreshes data while listening for trace results... */
 		$('#run_all').find("tr."+CURRENT_CLASS).children('td:first').append('<div id="track_status" style="display:none">***** Waiting for track results *****</div>');
-//			var pct = ((data['current_run_seq']-1) / data.runs.length) * 100; // OLD, not accurate after the last run
 		var completed = data.runs.filter(function(value) { return value.run_completed == true }).length;
 		var pct = (completed / data.runs.length) * 100;
 		updateStatusbar(Math.round(pct));
@@ -307,6 +306,7 @@ function updateStatus(nocache) {
 			$('#lane_'+lane).on('click tap', null, lane, selectSwapRacers);
 		}
 	}
+	console.log('Calling refreshData...');
 	refreshData(fnUpdate, nocache);
 	console.log('Exiting updateStatus');
 }
@@ -360,7 +360,7 @@ function broadcastUpdateInit() {
 }
 
 function startup() {
-	console.log("Entering startup()");
+	console.log("ENTER startup()");
 	
 	updateStatus();
 
@@ -376,6 +376,15 @@ function startup() {
 		console.log(ws_refresh);
 		broadcastUpdate();
 	});
+	
+	$('#reverseLaneDisplay').click(function() {
+		console.log('START calling reverseLaneDisplay()');
+		reverseLaneDisplay();
+		updateStatus();
+		console.log('END calling reverseLaneDisplay()');
+	});
+	console.log("EXIT startup()");
+
 }
  </script>
  <title>Race Control</title>
@@ -395,6 +404,7 @@ function startup() {
 	<button id="refreshStatus" class="view_status">Refresh status</button>
 	<button id="scrollToCurrentRun" class="view_status">Show current run</button>
 	<button id="broadcastRefresh">Broadcast refresh</button>
+	<button id="reverseLaneDisplay">Reverse lane display</button>
 </td></tr>
 <tr><td>
 	<div id="status" class="view_status">

@@ -208,14 +208,14 @@ function refreshData(mode, updateUI, nocache) {
  * BEGIN Status 
  *****************************************************************************/
 function updateStatus() {
-//	console.log('Entered updateStatus');
+	console.log('ENTER updateStatus');
 
 	$('div#status').find(".run-table").remove();
 
 	function fnUpdate(data) {
 		var htmlAllRuns = '';
 		for (i = 1; i <= data.runs.length; i++) {
-			htmlAllRuns += renderRun(data, i, reversed=false, detailed=true);
+			htmlAllRuns += renderRun(data, i, reversed=isReversed, detailed=true);
 		}
 		$('#run_all').find("tr").remove();
 		$('#run_all').append(htmlAllRuns);
@@ -224,7 +224,7 @@ function updateStatus() {
 		updateResults(data); /* update last run display info */
 	}
 	refreshData('status', fnUpdate);
-//	console.log('Exiting updateStatus');
+	console.log('EXIT updateStatus');
 }
 /*****************************************************************************
  * END Status, BEGIN Standings 
@@ -420,6 +420,14 @@ function startup() {
 			updateStatus(true);
 		});
 	}
+	
+	$('#reverseLaneDisplay').click(function() {
+		console.log('START calling reverseLaneDisplay()');
+		reverseLaneDisplay();
+		updateStatus();
+		console.log('END calling reverseLaneDisplay()');
+	});
+
 
 	$("#rundetail_dialog").dialog({
 		height: "auto",
@@ -454,6 +462,7 @@ function startup() {
             <button id="testResultDialog" onclick="showResultDialog()">Show last run result</button>
             <button id="refreshStandings" class="view_standings">Refresh standings (for older browsers)</button>
             <button id="refreshStatus" class="view_status">Refresh status (for older browsers)</button>
+            <button id="reverseLaneDisplay">Reverse lane display</button>
 			<!--  for testing:
 			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
 			<button id="testSpeed" onclick='testSpeed()'>testSpeed</button>

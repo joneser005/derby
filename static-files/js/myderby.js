@@ -2,6 +2,13 @@ var RACE_UPDATE_PORT = 8787;
 var RACE_UPDATE_PROTOCOL = "json";
 var CURRENT_CLASS = 'run_current'; /* DO NOT CHANGE - value referenced in html */
 var CURRENT_ID = 'run_current';
+var isReversed = false;
+
+function reverseLaneDisplay() {
+	console.log('OLD isReversed=' + isReversed);
+	isReversed = !isReversed;
+	console.log('NEW isReversed=' + isReversed);
+}
 
 function getDate() {
 	var now = new Date();
@@ -74,6 +81,7 @@ function myToFixed(x) {
 }
 
 function scrollToRun(event, run_seq) {
+	console.log("ENTER scrollToRun");
 	if (null != event) event.stopPropagation();
 	if (null != run_seq && run_seq > 0) {
 		console.log("scrollToRun(event, " + run_seq + ")...");
@@ -87,6 +95,7 @@ function scrollToRun(event, run_seq) {
 	} else {
 		console.log("scrollToRun(event, null) => hmmm, nothing to do!");
 	}
+	console.log("EXIT scrollToRun");
 }
 
 function scrollToCurrentRun(event) {
@@ -100,6 +109,7 @@ function scrollToCurrentRun(event) {
 }
 
 function renderRun(data, run_seq, reversed, detailed) {
+	console.log('BEGIN renderRun');
 	var run = getRun(data, run_seq);
 
 	if (null == run) {
@@ -132,7 +142,7 @@ function renderRun(data, run_seq, reversed, detailed) {
 
 	var row = ['<tr class="thin-hborder divider status-heading '+ cls +'"><td colspan="'+ parseInt(data.lane_ct-1) +
 	           			'" width="90%" class="big-text">Run '+ run.run_seq +' of '+ data.runs.length +
-	           			run_stamp +'</td><td colspan="2" class="center">'+prev_nav_snip + '&nbsp;&nbsp;&nbsp;' + curr_nav_snip + '&nbsp;&nbsp;&nbsp;' + next_nav_snip+'</td>', 
+	           			run_stamp +'</td><td colspan="2" class="center">'+prev_nav_snip + '&nbsp;&nbsp;&nbsp;' + ((true == isCurrentRun) ? '&nbsp;&nbsp;&nbsp;' : curr_nav_snip) + '&nbsp;&nbsp;&nbsp;' + next_nav_snip+'</td>', 
 				'<tr class="thin-hborder"><td width="10%" class="big-text">Lane</td>',
 				imgrow,
 	            '<tr class="thin-hborder"><td class="big-text">Car name</td>',
@@ -186,5 +196,6 @@ function renderRun(data, run_seq, reversed, detailed) {
 	}
 
 	table_body += "</tr></table>";
+	console.log('END renderRun');
 	return table+table_body;
 }
