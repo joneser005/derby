@@ -10,9 +10,9 @@ log = logging.getLogger('admin')
 # name_generator.load()
 
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name_first', 'name_last', 'rank']
-    list_display_links = ['id', 'name_first', 'name_last', 'rank']
-    list_filter = ('rank',)
+    list_display = ['id', 'name_first', 'name_last', 'rank', 'pack']
+    list_display_links = ['id', 'name_first', 'name_last', 'rank', 'pack']
+    list_filter = ('rank','pack',)
 
     def rank(self, obj):
         return obj.rank
@@ -41,7 +41,7 @@ class RacerAdmin(admin.ModelAdmin):
     fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag_20']
     list_display = ['id', 'person', 'rank', 'name', 'image_tag_20']
     list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_20']
-    list_filter = ('person__rank',)
+    list_filter = ('person__rank','person__pack',)
     readonly_fields = ('id', 'rank', 'image_tag_20',)
 
     def rank(self, obj):

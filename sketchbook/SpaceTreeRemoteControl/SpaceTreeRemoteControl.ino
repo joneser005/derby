@@ -8,7 +8,8 @@
 #include "RF24.h"
 #include "printf.h"
 #include "ExternDefs.h"
-#include "AudioBankSwitch.h"
+#include "Mode3Switch.h"
+#include "TriPosTwoPinSwitch.h"
 #include "RadioPowerSwitch.h"
 #include "AutoDestruct.h"
 
@@ -30,7 +31,7 @@
   #define PIN_BTN_FINISH                   38 // not used at present
   #define PIN_BTN_QUERY_SIGNAL_BOARD_STATE 40 // not used at present
 #define PIN_AUTODESTRUCT                 35
-#define PIN_NORMAL_OP                    37
+#define PIN_SPACE_OP                     37  // if AUTOD and SPACE are both off, we are in Derby mode (middle position)
 #define PIN_RF_PWR0                      42 // radio off
                                             // 42+43 use RF24_PA_MIN
 #define PIN_RF_PWR1                      43 // use RF24_PA_LOW
@@ -92,7 +93,8 @@ RF24 radio(PIN_RADIO_CE, PIN_RADIO_CS);
 // Single radio pipe address for the 2 nodes to communicate.
 const uint64_t pipe = 0xE8E8F0F0E1LL;
 
-AudioBankSwitch audioBankSwitch(PIN_WAV_BANK0, PIN_WAV_BANK1, PIN_WAV_BANK2);
+Mode3Switch audioBankSwitch(PIN_WAV_BANK0, PIN_WAV_BANK1, PIN_WAV_BANK2);
+TriPosTwoPinSwitch modeSwitch(PIN_AUTODESTRUCT, PIN_SPACE_OP);
 uint8_t rppins[3] = { PIN_RF_PWR0, PIN_RF_PWR1, PIN_RF_PWR2 };
 RadioPowerSwitch radioPowerSwitch(rppins);
 
@@ -124,8 +126,9 @@ void setup() {
   pinMode(PIN_BTN_RESET_INT, INPUT_PULLUP);
   pinMode(PIN_BTN_SET, INPUT_PULLUP);
   pinMode(PIN_BTN_GO, INPUT_PULLUP);
-  pinMode(PIN_BTN_FINISH, INPUT_PULLUP);
-  pinMode(PIN_BTN_QUERY_SIGNAL_BOARD_STATE, INPUT_PULLUP);
+  pinMode(PIN_BTN_FINISH, INPUT_PULLUP); // not used, but value is checked
+  pinMode(PIN_BTN_QUERY_SIGNAL_BOARD_STATE, INPUT_PULLUP);  // not used, but value is checked
+  pinMode(PIN_SPACE_OP, INPUT_PULLUP);
   pinMode(PIN_AUTODESTRUCT, INPUT_PULLUP);
   pinMode(PIN_RF_PWR0, INPUT_PULLUP);
   pinMode(PIN_RF_PWR1, INPUT_PULLUP);
@@ -209,13 +212,34 @@ void loop() {
     ad.check();
     check3WaySwitch(); // wav bank
     check5WaySwitch(); // radio power
+    checkModeSwitch(); // AD, space, pinewood
   }
 
   if (state_updated) {
     transmitState(userstate);
     setState(userstate);
     state_updated = false;
-    printf("state updated");
+    printf("state updated\r\n");
+  }
+}
+
+// Auto--destruct, Space, Pinewood
+void checkModeSwitch() {
+  uint8_t mode = modeSwitch.getMode(changed);
+  if (changed) {
+    printf("mode changed\r\n");
+    changed = false;
+    switch (mode) {
+      case 0:
+        transmitState(MODE_AUTOD);
+        break;
+      case 1:
+        transmitState(MODE_PINEWOOD);
+        break;
+      case 2:
+        transmitState(MODE_SPACE);
+        break;
+    }
   }
 }
 
@@ -225,7 +249,6 @@ void check3WaySwitch() {
   if (changed) {
     changed = false;
 
-    printf("Sending wavbank to remote: %i\r\n", wavbank);
     // HACK: WAV_BANK0-2 have been copied into sigstat_e for easy of transfer to the sigboard, postfixed with _STATE
     switch (wavbank) {
       case 0:
@@ -279,8 +302,10 @@ void msg(const char * m) {
 
 void playWav(remote_sounds_type i) {
   printf("%s\r\n", wavarray[i]);
+  noInterrupts();
   tmrpcm.play(wavarray[i]);
   while (tmrpcm.isPlaying());
+  interrupts();
 }
 
 void playState(sigstat_e s) {
@@ -522,9 +547,14 @@ const char * getStateStr(sigstat_e s) {
     case STATE_SET: return "STATE_SET";
     case STATE_GO: return "STATE_GO"; // The three STATE_PRE_GO_n states are purely transitional, for the countdown, and are not regarded as signal board states
     case STATE_FINISH: return "STATE_FINISH";
-    case STATE_UNDEF: return "STATE_UNDEF";
     case QUERY_STATE: return "*QUERY_STATE"; // not really a state, used to query current state
+    case WAV_BANK0_STATE: return "WAV_BANK0_STATE";
+    case WAV_BANK1_STATE: return "WAV_BANK1_STATE";
+    case WAV_BANK2_STATE: return "WAV_BANK2_STATE";
+    case MODE_AUTOD: return "MODE_AUTOD";
+    case MODE_SPACE: return "MODE_SPACE";
+    case MODE_PINEWOOD: return "MODE_PINEWOOD";
+    case STATE_UNDEF: return "STATE_UNDEF";
     default: return "*UNKNOWN STATE*";
   }
 }
-

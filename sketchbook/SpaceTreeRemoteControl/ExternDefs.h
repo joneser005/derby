@@ -14,7 +14,10 @@ typedef enum {
     QUERY_STATE, 
     WAV_BANK0_STATE,
     WAV_BANK1_STATE,
-    WAV_BANK2_STATE
+    WAV_BANK2_STATE,
+    MODE_AUTOD,
+    MODE_SPACE,
+    MODE_PINEWOOD
 } sigstat_e;  // keep 0-n ordering, as these are also used as array indices
 
 #ifdef IS_REMOTE_CTRL

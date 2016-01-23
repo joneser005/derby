@@ -1,10 +1,10 @@
-#include "AudioBankSwitch.h"
+#include "Mode3Switch.h"
 #include "ExternDefs.h"
 
-AudioBankSwitch::AudioBankSwitch(uint8_t p0, uint8_t p1, uint8_t p2) :
+Mode3Switch::Mode3Switch(uint8_t p0, uint8_t p1, uint8_t p2) :
   _p0(p0), _p1(p1), _p2(p2) { }
 
-int8_t AudioBankSwitch::getSwitchPosition(bool & changed) {
+int8_t Mode3Switch::getSwitchPosition(bool & changed) {
 	int8_t bank = -1;
   if (LOW == digitalRead(_p0)) {
 			bank = 0;
@@ -22,7 +22,7 @@ int8_t AudioBankSwitch::getSwitchPosition(bool & changed) {
 	return _bank;
 }
 
-uint8_t AudioBankSwitch::getBank(bool & changed) {
+uint8_t Mode3Switch::getBank(bool & changed) {
   
     return getSwitchPosition(changed);
 }

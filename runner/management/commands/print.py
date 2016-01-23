@@ -5,7 +5,7 @@ import json
 
 from runner.models import Race, Racer, Group
 from runner.reports import Reports
-from raceResults import RaceResults
+# from raceResults import RaceResults
 from argparse import Action
 
 log = logging.getLogger('runner')

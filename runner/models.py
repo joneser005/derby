@@ -26,6 +26,7 @@ class Person(models.Model):
                                                     ('WEBELOS I','WEBELOS I'),
                                                     ('WEBELOS II', 'WEBELOS II'),
                                                     ('None', 'n/a')])
+    pack = models.CharField(max_length=5)
     picture = models.ImageField(upload_to='people', blank=True, null=True, editable=False)
     stamp = models.DateTimeField(auto_now=True)
 
@@ -45,7 +46,7 @@ class Racer(models.Model):
     ''' e.g. Car or Rocket '''
     person = models.ForeignKey(Person)
     name = models.CharField(max_length=200, unique=True,blank=True, null=True)     # e.g. "Red Rider"
-    name_choice = models.ForeignKey(RacerName,blank=True, null=True, verbose_name="name suggestions") # HACK: Used to display a small random set of suggested racer names
+    name_choice = models.ForeignKey(RacerName,blank=True, null=True, verbose_name="name suggestions or specify below") # HACK: Used to display a small random set of suggested racer names
     picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)
 

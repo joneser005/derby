@@ -20,7 +20,7 @@ class Command(BaseCommand):
             print(self.args)
             print('Available races:')
             for race in Race.objects.all().order_by('derby_event__event_date', 'level'):
-                print('Race id/name: {}/{}'.format(race.pk, race.name))
+                print('Race id/name: {}/{} ({}/{})'.format(race.pk, race.name, race.derby_event.event_name, race.derby_event.event_date))
             return
 
         race = Race.objects.get(pk=race_id)
