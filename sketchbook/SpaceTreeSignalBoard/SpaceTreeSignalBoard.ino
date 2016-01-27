@@ -1,4 +1,4 @@
-#define ENABLE_WAV
+//#define DEBUG
 
 // Leo controls the signal board
 // Mega controls the remote b/c we may end up needing a lot of inputs.....
@@ -8,12 +8,8 @@
 // cu -l /dev/ttyACM1 -s 57600
 
 #include <Adafruit_NeoPixel.h>
-#ifdef ENABLE_WAV
-  #include <SD.h>
-  #include <TMRpcm.h>
-#else
-  #include "pitches.h"
-#endif
+#include <SD.h>
+#include <TMRpcm.h>
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
@@ -38,25 +34,16 @@ void radioInterrupt();
 #define PIN_RADIO_CS       8
 #define PIN_SD_CS          11
 
-#ifdef ENABLE_WAV
-  #define HANDLE_TAGS
-  //#define USE_TIMER2
-  #define DISABLE_SPEAKER2
-  char *wavarray[3][10] = {
-    // 0 = cylon
-    { "0/notfunct.wav", "0/powerup.wav", "0/ready.wav", "0/set.wav", "0/go1.wav", "0/go2.wav", "0/go3.wav", "0/gooooo.wav", "0/finish.wav", "0/query.wav" },
-    // 1 = lasers or whatever
-    { "1/notfunct.wav", "1/powerup.wav", "1/ready.wav", "1/set.wav", "1/go1.wav", "1/go2.wav", "1/go3.wav", "1/gooooo.wav", "1/finish.wav", "1/query.wav" },
-    // 2 = normal sounds
-    { "2/notfunct.wav", "2/powerup.wav", "2/ready.wav", "2/set.wav", "2/go1.wav", "2/go2.wav", "2/go3.wav", "2/gooooo.wav", "2/finish.wav", "2/query.wav" }
-  };
-  TMRpcm tmrpcm;
-#else
-  const unsigned long tone_duration_go_seq1 = 750;
-  const unsigned long tone_duration_go_seq2 = 1200;
-#endif
-const unsigned long go_duration_secs = 10;
+#define HANDLE_TAGS
+#define DISABLE_SPEAKER2
+char *wavarray[10] = {
+  // 0 = cylon, 1 = star trek, 2 = normal sounds (space and pinewood), 
+  "/notfunct.wav", "/powerup.wav", "/ready.wav", "/set.wav", "/go1.wav", "/go2.wav", "/go3.wav", "/gooooo.wav", "/finish.wav", "/query.wav"
+};
+TMRpcm tmrpcm;
+const unsigned long go_duration_secs = 6;
 uint8_t bank = 2; // sound bank, to select wav set
+uint8_t bank_type = 0; // 0 == space derby, 1 == pinewood derby, set via control switch
 
 volatile bool query = false;
 
@@ -85,54 +72,26 @@ volatile sigstat_e state;
 volatile sigstat_e pending_state;
 volatile bool force_state_change = false;
 
-#ifdef ENABLE_WAV
-  void playWav(int bank, sigstat_e s) {
-    tmrpcm.play(wavarray[bank][s]);
-    while (tmrpcm.isPlaying()); // don't do anything else while playing wavs (hoping this helps with the occasssional lockup)
-  }
-#endif
-
-void play(int bank, sigstat_e s) {
-#ifdef ENABLE_WAV
-  playWav(bank, s);
-#else
-  switch (s) {
-    case STATE_PRE_GO_1:
-    case STATE_PRE_GO_2:
-    case STATE_PRE_GO_3:
-      tone(PIN_SPEAKER, NOTE_C3, tone_duration_go_seq1);
-      break;
-    case STATE_GO:
-      tone(PIN_SPEAKER, NOTE_C4, tone_duration_go_seq2);
-      break;
-    default: //STATE_UNDEF, STATE_PWRON, STATE_READY, STATE_SET, STATE_FINISH, QUERY_STATE 
-      noTone(PIN_SPEAKER);
-      break;
-  }
-#endif
-}
-
 void play(sigstat_e s) {
-  play(bank, s);
+  sigstat_e ls = s;
+  if (ls >= WAV_BANK0_STATE) ls = STATE_PWRON;
+  String fname = String(bank+(3*bank_type))+wavarray[ls];
+  char * pfn = (char *) fname.c_str();
+//  noInterrupts();  // this line appears to bork the whole shebang [update: just moved *above* tmrpcm.play, TODO retry now]
+  tmrpcm.play(pfn);
+  while (tmrpcm.isPlaying()); // don't do anything else while playing wavs (hoping this helps with the occasssional lockup)
+//  interrupts();
 }
 
 void setup() {
   Serial.begin(115200);
 
-// DEBUG only
-//  while (!Serial);
-  
   printf_begin();
-//  printf("+setup\r\n");
 
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-#ifdef ENABLE_WAV
   tmrpcm.speakerPin = PIN_SPEAKER;
-#else
-  pinMode(PIN_SPEAKER, OUTPUT);
-#endif
 
   /***** RF24 radio + serial monitor *****/
 //  printf("RF24 init\r\n");
@@ -142,35 +101,31 @@ void setup() {
   radio.setPALevel(RF24_PA_HIGH); // TODO: Test range to ensure we are giving the radio enough power to function in the gym setting.
                                  //       Four levels: RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH and RF24_PA_MAX
   radio.enableAckPayload(); // send back the old state on assignment; current state on query
-//  radio.setAutoAck(true);
-//  radio.setRetries(15,15);
-//  radio.setPayloadSize(sizeof(sigstat_e));
   radio.openReadingPipe(1,pipe);
   radio.startListening();
-//  sigstat_e s = STATE_PWRON;
-//  radio.writeAckPayload(1, &s, sizeof(s));
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
+#ifdef DEBUG
   radio.printDetails();
+#endif
 
-#ifdef ENABLE_WAV
   if (!SD.begin(PIN_SD_CS)) {  // see if the card is present and can be initialized:
+#ifdef DEBUG
     printf("SD fail\r\n");  
+#endif
   } else {
+#ifdef DEBUG
     printf("SD OK\r\n");  
+#endif
     tmrpcm.setVolume(5);
   }
-#endif
 
   state = STATE_UNDEF;
   pending_state = STATE_PWRON;
-  setState(STATE_PWRON);
-
-//  printf("-setup\r\n");
+//  setState(STATE_PWRON);
 }
 
 void loop() {
   if (pending_state != state || force_state_change) {
-//    printf("State chg\r\n");
     setState(pending_state);
     pending_state = state;
     force_state_change = false;
@@ -178,29 +133,33 @@ void loop() {
     query = false;
     play(QUERY_STATE);
   }
-//  delay(250);
 }
 
 void radioInterrupt() {
   bool tx_ok, tx_fail, rx_ready;
   radio.whatHappened(tx_ok, tx_fail, rx_ready);
+//#ifdef DEBUG
   printf("tx_ok/tx_fail/rx_ready=%i/%i/%i\r\n", tx_ok, tx_fail, rx_ready);
+//#endif
 
-  if (tx_ok) {
-  }
+  if (tx_ok) { }
 
-  if (tx_fail) {
-  }
+  if (tx_fail) { }
 
   if (rx_ready) {
     // Get this payload and dump it
     sigstat_e requested_state;
     radio.read(&requested_state, sizeof(requested_state));
     
+//#ifdef DEBUG
     printf("Recieved state=%s\r\n", getStateStr(requested_state));
+//#endif
     sigstat_e s = requested_state;
     radio.writeAckPayload(1, &s, sizeof(s));
-    printf("Next ack=%s\r\n", getStateStr(s));
+//    printf("Next ack=%s\r\n", getStateStr(s));
+
+    if (tmrpcm.isPlaying()) return; // Ignore requests while playing wav to prevent conflicts
+                                    // Do this after reading the radio buffer
 
     if (QUERY_STATE == requested_state) {
       query = true;
@@ -212,7 +171,9 @@ void radioInterrupt() {
 }
 
 void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
+#ifdef DEBUG
   printf("Bad st chg %s>%s\r\n", getStateStr(oldstate), getStateStr(newstate));
+#endif
 }
 
 /*
@@ -231,23 +192,22 @@ Unknown state - light first two LEDs + finish
 
 
 void setState(sigstat_e newstate) {
-  bool updateState = true;
+  bool updateState = false;
 
   if (state == newstate && newstate != STATE_READY) return; // always honor a STATE_READY request, its more like a reset
   
-  printf("Req=%s\r\n", getStateStr(newstate));
+//  printf("Req=%s\r\n", getStateStr(newstate));
 
   switch (newstate) {
 
     case STATE_PWRON:
-//      printf("case STATE_PWRON\r\n");
       set_lights(0, strip.Color(COLOR_POWERON));
+      updateState = true;
       break;
 
     case STATE_READY:
       // No validation check - *always* go to ready-state when requested
-//      printf("case STATE_READY\r\n");
-      for (int8_t x=0; x<3; x++) {
+      for (int8_t x=0; x<20; x++) {
         for (int i=0; i<7; i++) {
           set_lights(i, strip.Color(0,0,255));
           set_lights(i, strip.Color(0,0,0));
@@ -258,106 +218,115 @@ void setState(sigstat_e newstate) {
         }
       }
       set_lights(0, strip.Color(COLOR_READY));
+      updateState = true;
       break;
 
     case STATE_SET:
-//      printf("case STATE_SET\r\n");
       if (STATE_READY != state) {
         printBadStateChange(state, newstate);
-        updateState = false;
         break;
       }
       set_lights(1, strip.Color(COLOR_SET));
+      updateState = true;
       break;
 
     case STATE_GO:
-//      printf("case STATE_GO\r\n");
       // Note: We test state after each LED in case the Ready/Reset interrupt 
       if (STATE_SET != state) {        // Check for reset/ready button/interrupt
         printBadStateChange(state, newstate);
-        updateState = false;
         break;
       }
 
       // The GO sequence bits all follow a 3-step pattern: Set state, Wait, Check for reset
       // (We don't check for reset first b/c the GO button was just pushed)
-//      printf("case GO 1\r\n");
       set_lights(2, strip.Color(COLOR_GO1));
-      play(bank, STATE_PRE_GO_1);
-//      delay(1000); // replace with 1 sec tone
+      play(STATE_PRE_GO_1);
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
-        updateState = false;
         break;
       }
 
-//      printf("case GO 2\r\n");
       set_lights(3, strip.Color(COLOR_GO2));
-      play(bank, STATE_PRE_GO_2);
-//      delay(1000); // replace with 1 sec tone
+      play(STATE_PRE_GO_2);
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
-        updateState = false;
         break;
       }
 
-//      printf("case GO 3\r\n");
       set_lights(4, strip.Color(COLOR_GO3));
-      play(bank, STATE_PRE_GO_3);
-//      delay(1000); // replace with 1 sec tone
+      play(STATE_PRE_GO_3);
       if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
-        updateState = false;
         break;
       }
 
-//      printf("case GO 4\r\n");
       set_lights(5, strip.Color(COLOR_GO4));
-      play(bank, STATE_GO);
+      play(STATE_GO);
       for (uint8_t d=0; d<go_duration_secs; d++) {
         delay(1000);
         if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
           setState(pending_state);
-          updateState = false;
           break;
         }
       }
-      if (STATE_READY != state) {
-        state = STATE_GO; // HACK for auto-finish (space derby only, mentioned here in case this code gets lifted for PWD, which will have a signal to indicate this)
-        setState(STATE_FINISH);
-        updateState = false; // so we don't override prior stmt
-      }
+
+      updateState = false;
+      set_lights(6, strip.Color(COLOR_FINISH));
+      newstate = STATE_FINISH;
+      updateState = true;
       break;
 
     case STATE_FINISH:
-//      printf("case STATE_FINISH\r\n");
-      if (STATE_GO != state) {
-        printBadStateChange(state, newstate);
-        updateState = false;
-        break;
-      }
+//      if (STATE_GO != state) {
+//        printBadStateChange(state, newstate);
+//        break;
+//      }
       set_lights(6, strip.Color(COLOR_FINISH));
-      play(STATE_FINISH);
+      updateState = true;
       break;
 
     case WAV_BANK0_STATE:
       bank = 0;
-      printf("w0\r\n");
+      play(STATE_PWRON);
       break;
 
     case WAV_BANK1_STATE:
       bank = 1;
-      printf("w1\r\n");
+      play(STATE_PWRON);
       break;
 
     case WAV_BANK2_STATE:
       bank = 2;
-      printf("w2\r\n");
+      play(STATE_PWRON);
+      break;
+
+    case MODE_AUTOD:
+      // TODO/MAYBE - if we want the race tree to play along with the auto destruct
+      // For now, just play with the lights a bit
+      for (int8_t x=0; x<20; x++) {
+        for (int i=0; i<7; i++) {
+          set_lights(i, strip.Color(255,0,0));
+          set_lights(i, strip.Color(0,0,0));
+          delay(10);
+        }
+        for (int i=6; i>0; i--) {
+          set_lights(i, strip.Color(255,0,0));
+          set_lights(i, strip.Color(0,0,0));
+          delay(10);
+        }
+      }
+      set_lights(0, strip.Color(COLOR_READY));
+      break;
+
+    case MODE_SPACE:
+      bank_type = 0;
+      break;
+
+    case MODE_PINEWOOD:
+      bank_type = 1;
       break;
 
     default:
-      // Unknown state
-//      printf("case UNKSTATE\r\n");
       set_lights(0, strip.Color(0,200,200));
       state = STATE_UNDEF;
       play(state);
@@ -366,7 +335,7 @@ void setState(sigstat_e newstate) {
 
   if (updateState) {
     state = newstate;
-    printf("New st=%s\r\n", getStateStr(state));
+//    printf("New st=%s\r\n", getStateStr(state));
     play(state); // handles all but the go-sequence
   }
 }
@@ -374,11 +343,11 @@ void setState(sigstat_e newstate) {
 void set_lights(uint8_t light_num, uint32_t c) {
    for (uint8_t i=0; i<7; i++) {
      if (i == light_num) {
-       strip.setPixelColor(i, c);
-       strip.setPixelColor(13-i, c);
+       strip.setPixelColor(6-i, c);
+       strip.setPixelColor(7+i, c);
      } else {
-       strip.setPixelColor(i, 0);
-       strip.setPixelColor(13-i, 0);
+       strip.setPixelColor(6-i, 0);
+       strip.setPixelColor(7+i, 0);
      }
    }
    strip.show();
