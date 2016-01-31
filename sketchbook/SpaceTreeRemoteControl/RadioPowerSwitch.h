@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <RF24.h>
 
+// poorly thought-out abstraction alert
+
 class RadioPowerSwitch {
 public:
 

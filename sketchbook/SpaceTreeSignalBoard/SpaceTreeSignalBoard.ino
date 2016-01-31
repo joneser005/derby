@@ -4,8 +4,8 @@
 // Mega controls the remote b/c we may end up needing a lot of inputs.....
 
 // Listen to the boards:
-// cu -l /dev/ttyACM0 -s 57600
-// cu -l /dev/ttyACM1 -s 57600
+// cu -l /dev/ttyACM0 -s 115200
+// cu -l /dev/ttyACM1 -s 115200
 
 #include <Adafruit_NeoPixel.h>
 #include <SD.h>
@@ -36,15 +36,23 @@ void radioInterrupt();
 
 #define HANDLE_TAGS
 #define DISABLE_SPEAKER2
+
+// will later prepend integer-as-string directory name (ex. "4/powerup.wav")
+// The number and order of these correspond to the STATE_xxx values in ExternDefs.h
 char *wavarray[10] = {
-  // 0 = cylon, 1 = star trek, 2 = normal sounds (space and pinewood), 
-  "/notfunct.wav", "/powerup.wav", "/ready.wav", "/set.wav", "/go1.wav", "/go2.wav", "/go3.wav", "/gooooo.wav", "/finish.wav", "/query.wav"
+   "/notfunct.wav", "/powerup.wav", "/ready.wav", "/set.wav", "/go1.wav", "/go2.wav", "/go3.wav", "/gooooo.wav", "/finish.wav", "/query.wav"
 };
 TMRpcm tmrpcm;
-const unsigned long go_duration_secs = 6;
-uint8_t bank = 2; // sound bank, to select wav set
-uint8_t bank_type = 0; // 0 == space derby, 1 == pinewood derby, set via control switch
+const unsigned long go_duration_secs = 6; // time before red finish light illuminates
 
+// used for wav playback when not specified:
+uint8_t lastMode = MODE_PWD; // space, pwd, set via control switch
+uint8_t lastWavBank = WAVBANK_0; // sound bank, to select wav set
+
+// volatile because the radio interrupt could change this at any time; normal code may not otherwise see the change right away.
+volatile uint8_t state; // mode + wavbank + tree state
+volatile uint8_t pending_state; // mode + wavbank + tree state
+volatile bool force_state_change = false;
 volatile bool query = false;
 
 /**********************************************************/
@@ -64,23 +72,33 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(14, PIN_LED_DATA, NEO_GRB + NEO_KHZ8
 
 /**********************************************************/
 /***** Radio setup                                        */
-bool isSignalBoard = 1; // Use 0 as the remote, 1 as the signal board
 RF24 radio(PIN_RADIO_CE, PIN_RADIO_CS);
-const uint64_t pipe = 0xE8E8F0F0E1LL;
+const uint64_t pipe = 0xE8E8F0F0E1LL; // must match remote
 
-volatile sigstat_e state;
-volatile sigstat_e pending_state;
-volatile bool force_state_change = false;
+// HACK: Convolution invocation.  Refactor this if you ever have to come back this way.
+void play(uint8_t s) {
+  uint8_t s2 = getNewFullState(s, state);
+  uint8_t mode = s2 & MODE_MASK;
+  if (MODE_UNDEF == mode) {
+    mode = lastMode;
+    s2 |= mode; // not all callers include mode
+  }
+  else lastMode = mode;
+  if (mode!=MODE_SPACE && mode!=MODE_PWD) return;
 
-void play(sigstat_e s) {
-  sigstat_e ls = s;
-  if (ls >= WAV_BANK0_STATE) ls = STATE_PWRON;
-  String fname = String(bank+(3*bank_type))+wavarray[ls];
+  uint8_t wavBank = s2 * WAVBANK_MASK;
+  if (WAVBANK_UNDEF==wavBank) {
+    wavBank = lastWavBank;
+    s |= lastWavBank; // not all callers include wavbank
+  }
+  else lastWavBank = wavBank;
+  if (wavBank!=WAVBANK_0 && wavBank!=WAVBANK_1 && wavBank!=WAVBANK_2) return;
+
+  uint8_t wavIndex = getWavIndex(s);
+  String fname = String((getWavBankIndex(s2)+(3*(getModeIndex(s2)))))+wavarray[wavIndex];
   char * pfn = (char *) fname.c_str();
-//  noInterrupts();  // this line appears to bork the whole shebang [update: just moved *above* tmrpcm.play, TODO retry now]
   tmrpcm.play(pfn);
-  while (tmrpcm.isPlaying()); // don't do anything else while playing wavs (hoping this helps with the occasssional lockup)
-//  interrupts();
+  while (tmrpcm.isPlaying()); // don't do anything else while playing wavs (prevents attempts to play a 2nd wav simultaneously)
 }
 
 void setup() {
@@ -99,9 +117,11 @@ void setup() {
   // Set the PA Level low to prevent power supply related issues since this is a
   // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
   radio.setPALevel(RF24_PA_HIGH); // TODO: Test range to ensure we are giving the radio enough power to function in the gym setting.
-                                 //       Four levels: RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH and RF24_PA_MAX
+                                  //       Four levels: RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH and RF24_PA_MAX
+                                  // This only affects ACK transmissions.
+                                  // TODO: Re-read up on details behind ACK reception on remote side.  Ergo, any negative consequences to if it doesn't receive expected acks? 
   radio.enableAckPayload(); // send back the old state on assignment; current state on query
-  radio.openReadingPipe(1,pipe);
+  radio.openReadingPipe(1, pipe);
   radio.startListening();
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
 #ifdef DEBUG
@@ -119,9 +139,10 @@ void setup() {
     tmrpcm.setVolume(5);
   }
 
+// At poweron, we make a few assumptions.  These will be corrected
+// when the remote sends us messages.
+  pending_state = STATE_PWRON | MODE_PWD | WAVBANK_1;
   state = STATE_UNDEF;
-  pending_state = STATE_PWRON;
-//  setState(STATE_PWRON);
 }
 
 void loop() {
@@ -131,7 +152,7 @@ void loop() {
     force_state_change = false;
   } else if (query) {
     query = false;
-    play(QUERY_STATE);
+    play(QUERY_STATE | lastMode | lastWavBank);
   }
 }
 
@@ -148,31 +169,31 @@ void radioInterrupt() {
 
   if (rx_ready) {
     // Get this payload and dump it
-    sigstat_e requested_state;
+    uint8_t requested_state;
     radio.read(&requested_state, sizeof(requested_state));
     
 //#ifdef DEBUG
-    printf("Recieved state=%s\r\n", getStateStr(requested_state));
+    printf("Recieved state=%s\r\n", int2bin(requested_state));
 //#endif
-    sigstat_e s = requested_state;
-    radio.writeAckPayload(1, &s, sizeof(s));
-//    printf("Next ack=%s\r\n", getStateStr(s));
+    radio.writeAckPayload(1, &requested_state, sizeof(requested_state));  // echo it back
+//    printf("Next ack=%s\r\n", int2bin(s));
 
     if (tmrpcm.isPlaying()) return; // Ignore requests while playing wav to prevent conflicts
-                                    // Do this after reading the radio buffer
+                                    // Do this after reading the radio buffer else subsequent requests will use that.
+                                    // To that point, maybe we should flush the receive buffer after each read.....
 
-    if (QUERY_STATE == requested_state) {
+    if (QUERY_STATE == getTreeState(requested_state)) {
       query = true;
-    } else if (requested_state != state || requested_state == STATE_READY) {
+    } else if (requested_state != state || getTreeState(requested_state) == STATE_READY) {
       pending_state = requested_state;
       force_state_change = true;
     }
   }
 }
 
-void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
+void printBadStateChange(uint8_t oldstate, uint8_t newstate) {
 #ifdef DEBUG
-  printf("Bad st chg %s>%s\r\n", getStateStr(oldstate), getStateStr(newstate));
+  printf("Bad st chg %s>%s\r\n", int2bin(oldstate), int2bin(newstate));
 #endif
 }
 
@@ -191,14 +212,17 @@ Unknown state - light first two LEDs + finish
 */
 
 
-void setState(sigstat_e newstate) {
+void setState(uint8_t newstate) {
+  uint8_t newTreeState = getTreeState(newstate);
+  if (state == newstate && newTreeState != STATE_READY) return; // always honor a STATE_READY request, a better name for this may have been 'STATE_RESET'
+  uint8_t treeState = getTreeState(state);
   bool updateState = false;
-
-  if (state == newstate && newstate != STATE_READY) return; // always honor a STATE_READY request, its more like a reset
   
-//  printf("Req=%s\r\n", getStateStr(newstate));
+//  printf("Req=%s\r\n", int2bin(newstate));
+  lastWavBank = newstate & WAVBANK_MASK;
+  lastMode = newstate & MODE_MASK;
 
-  switch (newstate) {
+  switch (newTreeState) {
 
     case STATE_PWRON:
       set_lights(0, strip.Color(COLOR_POWERON));
@@ -222,7 +246,7 @@ void setState(sigstat_e newstate) {
       break;
 
     case STATE_SET:
-      if (STATE_READY != state) {
+      if (STATE_READY != treeState) {
         printBadStateChange(state, newstate);
         break;
       }
@@ -232,7 +256,7 @@ void setState(sigstat_e newstate) {
 
     case STATE_GO:
       // Note: We test state after each LED in case the Ready/Reset interrupt 
-      if (STATE_SET != state) {        // Check for reset/ready button/interrupt
+      if (STATE_SET != treeState) {        // Check for reset/ready button/interrupt
         printBadStateChange(state, newstate);
         break;
       }
@@ -241,21 +265,21 @@ void setState(sigstat_e newstate) {
       // (We don't check for reset first b/c the GO button was just pushed)
       set_lights(2, strip.Color(COLOR_GO1));
       play(STATE_PRE_GO_1);
-      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+      if (STATE_READY == getTreeState(pending_state)) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         break;
       }
 
       set_lights(3, strip.Color(COLOR_GO2));
       play(STATE_PRE_GO_2);
-      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+      if (STATE_READY == getTreeState(pending_state)) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         break;
       }
 
       set_lights(4, strip.Color(COLOR_GO3));
       play(STATE_PRE_GO_3);
-      if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+      if (STATE_READY == getTreeState(pending_state)) {     // Abort on reset/ready button/interrupt
         setState(pending_state);
         break;
       }
@@ -264,70 +288,18 @@ void setState(sigstat_e newstate) {
       play(STATE_GO);
       for (uint8_t d=0; d<go_duration_secs; d++) {
         delay(1000);
-        if (STATE_READY == pending_state) {     // Abort on reset/ready button/interrupt
+        if (STATE_READY == getTreeState(pending_state)) {     // Abort on reset/ready button/interrupt
           setState(pending_state);
-          break;
+          return;
         }
       }
 
-      updateState = false;
       set_lights(6, strip.Color(COLOR_FINISH));
-      newstate = STATE_FINISH;
-      updateState = true;
-      break;
-
-    case STATE_FINISH:
-//      if (STATE_GO != state) {
-//        printBadStateChange(state, newstate);
-//        break;
-//      }
-      set_lights(6, strip.Color(COLOR_FINISH));
-      updateState = true;
-      break;
-
-    case WAV_BANK0_STATE:
-      bank = 0;
-      play(STATE_PWRON);
-      break;
-
-    case WAV_BANK1_STATE:
-      bank = 1;
-      play(STATE_PWRON);
-      break;
-
-    case WAV_BANK2_STATE:
-      bank = 2;
-      play(STATE_PWRON);
-      break;
-
-    case MODE_AUTOD:
-      // TODO/MAYBE - if we want the race tree to play along with the auto destruct
-      // For now, just play with the lights a bit
-      for (int8_t x=0; x<20; x++) {
-        for (int i=0; i<7; i++) {
-          set_lights(i, strip.Color(255,0,0));
-          set_lights(i, strip.Color(0,0,0));
-          delay(10);
-        }
-        for (int i=6; i>0; i--) {
-          set_lights(i, strip.Color(255,0,0));
-          set_lights(i, strip.Color(0,0,0));
-          delay(10);
-        }
-      }
-      set_lights(0, strip.Color(COLOR_READY));
-      break;
-
-    case MODE_SPACE:
-      bank_type = 0;
-      break;
-
-    case MODE_PINEWOOD:
-      bank_type = 1;
+      play(STATE_FINISH);
       break;
 
     default:
-      set_lights(0, strip.Color(0,200,200));
+      set_lights(0, strip.Color(200,0,0));
       state = STATE_UNDEF;
       play(state);
       break;
@@ -335,8 +307,8 @@ void setState(sigstat_e newstate) {
 
   if (updateState) {
     state = newstate;
-//    printf("New st=%s\r\n", getStateStr(state));
-    play(state); // handles all but the go-sequence
+//    printf("New st=%s\r\n", int2bin(state));
+    play(state); // handles all but the default + go-sequence
   }
 }
 

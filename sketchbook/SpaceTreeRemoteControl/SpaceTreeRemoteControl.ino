@@ -1,5 +1,10 @@
-#define IS_REMOTE_CTRL 1
+// Leo controls the signal board
 // Mega controls the remote b/c we may end up needing a lot of inputs.....
+#define IS_REMOTE_CTRL 1
+// Listen to the boards:
+// cu -l /dev/ttyACM0 -s 115200
+// cu -l /dev/ttyACM1 -s 115200
+
 #include <LiquidCrystal.h>
 #include <SD.h>
 #include <TMRpcm.h>
@@ -11,7 +16,7 @@
 #include "Mode3Switch.h"
 #include "TriPosTwoPinSwitch.h"
 #include "RadioPowerSwitch.h"
-#include "AutoDestruct.h"
+//#include "AutoDestruct.h"
 
 #define PIN_RADIO_INT                     2    /* interrupt pins vary by board, 2 ... */
 #define PIN_BTN_RESET_INT                 3 // pushed when high /*  ... and 3 are good for Leo and Mega  */
@@ -78,10 +83,6 @@ char *wavarray[WAV_ARR_SIZE] = {
 };
 TMRpcm tmrpcm;
 
-/****************** User Config ***************************/
-/***      Set this radio as radio number 0 or 1         ***/
-bool isSignalBoard = 0; // Use 0 as the remote, 1 as the signal board
-
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus two pins for CE, CSN (c'tor, below)
 
 My comments:
@@ -91,20 +92,25 @@ Leonardo  ICSP-4        ICSP-1        ICSP-3          -           -
 */
 RF24 radio(PIN_RADIO_CE, PIN_RADIO_CS);
 // Single radio pipe address for the 2 nodes to communicate.
-const uint64_t pipe = 0xE8E8F0F0E1LL;
+const uint64_t pipe = 0xE8E8F0F0E1LL; // matches value set in race tree
 
 Mode3Switch audioBankSwitch(PIN_WAV_BANK0, PIN_WAV_BANK1, PIN_WAV_BANK2);
 TriPosTwoPinSwitch modeSwitch(PIN_AUTODESTRUCT, PIN_SPACE_OP);
 uint8_t rppins[3] = { PIN_RF_PWR0, PIN_RF_PWR1, PIN_RF_PWR2 };
 RadioPowerSwitch radioPowerSwitch(rppins);
 
-/**********************************************************/
-volatile sigstat_e state;
-volatile bool state_updated = false;
-LiquidCrystal lcd(PIN_LCD_RS, PIN_LCD_E, PIN_LCD_D4,  PIN_LCD_D5, PIN_LCD_D6, PIN_LCD_D7);
-AutoDestruct ad(lcd, PIN_AUTODESTRUCT, PIN_BTN_SET, PIN_BTN_GO);  
+uint8_t wavbank = WAVBANK_UNDEF;
+uint8_t mode = MODE_UNDEF;
 
-bool initFromSignalBoard = false;
+// TODO: See if we can eliminate these.  The race tree guards against invalid state changes.
+volatile uint8_t state = 0; // mode + wavbank + tree state
+volatile bool state_updated = false;
+
+
+
+
+LiquidCrystal lcd(PIN_LCD_RS, PIN_LCD_E, PIN_LCD_D4,  PIN_LCD_D5, PIN_LCD_D6, PIN_LCD_D7);
+//AutoDestruct ad(lcd, PIN_AUTODESTRUCT, PIN_BTN_SET, PIN_BTN_GO);  
 
 void heartbeat();
 void initButtonPin(uint8_t p);
@@ -112,13 +118,13 @@ void radioFlushHack();
 void updateRemoteStateFromSignalBoardState();
 void playWav(remote_sounds_type i);
 
-bool changed = false; // misc local/multi
+bool changed = false; // shared/misc
 
 void setup() {
   Serial.begin(115200);
   printf_begin();
-  printf("---------------------------------------------------------\r\n");
-  printf("ENTER remote control setup\r\n");
+  msg("---------------------------------------------------------");
+  msg("ENTER remote control setup");
   lcd.begin(16, 2);
   lcd.print("Initializing...");
   pinMode(13, OUTPUT);
@@ -137,63 +143,44 @@ void setup() {
   pinMode(PIN_WAV_BANK1, INPUT_PULLUP);
   pinMode(PIN_WAV_BANK2, INPUT_PULLUP);
 
-  state = STATE_UNDEF;
-  sigstat_e s = STATE_PWRON;
-  setState(STATE_PWRON);
+  state = STATE_PWRON;
 
   /***** RF24 radio monitor *****/
-  printf("RF24 radio initializing.....\r\n");
+  msg("RF24 radio initializing.....");
   
-    radio.begin();
-  
-    // Set the PA Level low to prevent power supply related issues
-    //check5WaySwitch();
-    radio.setPALevel(RF24_PA_LOW);
-    changed = false; // shared global :-|
-    
-    radio.enableAckPayload(); // the signal board will send back the current state on query
-//    radio.setAutoAck(true);
-//    radio.setRetries(15,15);
-//    radio.setPayloadSize(sizeof(sigstat_e));  
-    radio.openWritingPipe(pipe);
-  
+  radio.begin();
+  radio.enableAckPayload(); // the signal board will send back the current state on query
+  radio.openWritingPipe(pipe);
   radio.printDetails();
 
   tmrpcm.speakerPin = PIN_SPEAKER;
   if (!SD.begin(PIN_SD_CS)) {  // see if the card is present and can be initialized:
-    printf("SD fail\r\n");  
+    msg("SD fail");  
   } else {
-    printf("SD OK\r\n");  
+    msg("SD OK");  
     tmrpcm.setVolume(6); // 7 (max) sounds terrible
   }
 
   attachInterrupt(digitalPinToInterrupt(PIN_RADIO_INT), radioInterrupt, FALLING);
   attachInterrupt(digitalPinToInterrupt(PIN_BTN_RESET_INT), btnResetToReady, RISING);
 
-  lcd.setCursor(0,0); // col, row
-  lcd.print("Launch Control: ");
-  lcd.setCursor(0,1);
-  lcd.print("[ OPERATIONAL ] ");
+  checkRadioPowerSwitch(true);
 
-  playWav(WAV_PWRON);
-
-  printf("EXIT remote control setup\r\n");
+  msg("EXIT remote control setup");
 }
 
-sigstat_e userstate = STATE_UNDEF;
-
+uint8_t userstate = STATE_UNDEF; //var only used in loop, is here just to prevent it from being removed/re-added to the stack each cycle
 void loop() {
   heartbeat();
 
-  if (!initFromSignalBoard) {
-    initFromSignalBoard = true;
-    printf("ONCE: Getting state from signal board.....\r\n");
-    delay(500);
-    updateRemoteStateFromSignalBoardState();
-    printf(" done.\r\n");
-  }
-
-  if (reset_to_ready) {
+  bool changed =  audioBankSwitch.checkSwitch(wavbank);
+       changed |= modeSwitch.checkSwitch(mode); // AD, space, pinewood
+  if (changed) {
+    userstate = STATE_PWRON;
+    state_updated = true;
+  } else if (STATE_PWRON == state) {  // from setup
+    state_updated = true;
+  } else if (reset_to_ready) {  // reset button pressed (via interrupt)
     userstate = STATE_READY;
     state_updated = true;
     reset_to_ready = false;
@@ -206,75 +193,29 @@ void loop() {
   } else if (isButtonPressed(PIN_BTN_FINISH)) {
     userstate = STATE_FINISH;
     state_updated = true;
-  } else if (isButtonPressed(PIN_BTN_QUERY_SIGNAL_BOARD_STATE)) {
-    transmitState(QUERY_STATE);
   } else {
-    ad.check();
-    check3WaySwitch(); // wav bank
-    check5WaySwitch(); // radio power
-    checkModeSwitch(); // AD, space, pinewood
+    checkRadioPowerSwitch();
   }
 
   if (state_updated) {
+    toWavBank(wavbank);
+    toMode(mode);
+    userstate = wavbank | mode | userstate;
     transmitState(userstate);
     setState(userstate);
     state_updated = false;
-    printf("state updated\r\n");
-  }
-}
-
-// Auto--destruct, Space, Pinewood
-void checkModeSwitch() {
-  uint8_t mode = modeSwitch.getMode(changed);
-  if (changed) {
-    printf("mode changed\r\n");
-    changed = false;
-    switch (mode) {
-      case 0:
-        transmitState(MODE_AUTOD);
-        break;
-      case 1:
-        transmitState(MODE_PINEWOOD);
-        break;
-      case 2:
-        transmitState(MODE_SPACE);
-        break;
-    }
-  }
-}
-
-// Wav bank
-void check3WaySwitch() {
-  uint8_t wavbank = audioBankSwitch.getBank(changed);
-  if (changed) {
-    changed = false;
-
-    // HACK: WAV_BANK0-2 have been copied into sigstat_e for easy of transfer to the sigboard, postfixed with _STATE
-    switch (wavbank) {
-      case 0:
-        playWav(WAV_BANK0);
-        transmitState(WAV_BANK0_STATE);
-        break;
-      case 1:
-        playWav(WAV_BANK1);
-        transmitState(WAV_BANK1_STATE);
-        break;
-      case 2:
-        playWav(WAV_BANK2);
-        transmitState(WAV_BANK2_STATE);
-        break;
-    }
-
+    msg("state updated");
   }
 }
 
 // Radio power
-void check5WaySwitch() {
+void checkRadioPowerSwitch(bool inSetup) {
   uint8_t pos = radioPowerSwitch.getSwitchPosition();
   rf24_pa_dbm_e power = radioPowerSwitch.getPower(changed);
   if (changed) {
-      radio.setPALevel(power);
-      changed = false;
+    radio.setPALevel(power);
+    changed = false;
+    if (!inSetup) {
       switch (pos) {
         case 0:
           playWav(WAV_LOW);
@@ -293,11 +234,13 @@ void check5WaySwitch() {
           break;
       }
       radio.printDetails();
+    }
   }
 }
+void checkRadioPowerSwitch() { checkRadioPowerSwitch(false); }
 
 void msg(const char * m) {
-  printf(m);
+  printf("%s\r\n", m);
 }
 
 void playWav(remote_sounds_type i) {
@@ -308,8 +251,9 @@ void playWav(remote_sounds_type i) {
   interrupts();
 }
 
-void playState(sigstat_e s) {
-  switch (s) {
+void playState(uint8_t s) {
+  uint8_t ss = s & STATE_MASK;
+  switch (ss) {
     case STATE_PWRON:
       playWav(WAV_PWRON);
       break;
@@ -334,17 +278,17 @@ void playState(sigstat_e s) {
 }
 
 void radioInterrupt() {
-//  printf("ENTER radioInterrupt()\r\n");
+//  msg("ENTER radioInterrupt()");
   bool tx_ok, tx_fail, rx_ready;
   radio.whatHappened(tx_ok, tx_fail, rx_ready);
   printf("tx_ok/tx_fail/rx_ready=%i/%i/%i\r\n", tx_ok, tx_fail, rx_ready);
 
   if (tx_ok) {
-//    printf("Radio int: tx_ok\r\n");
+//    msg("Radio int: tx_ok");
   }
 
   if (tx_fail) {
-//    printf("Radio int: tx_fail\r\n");
+//    msg("Radio int: tx_fail");
   }
 
   // Transmitter can power down for now, because the transmission is done.
@@ -353,84 +297,85 @@ void radioInterrupt() {
   }
 
   if (rx_ready) { // || radio.available()) {
-//    printf("Radio int: rx_ready\r\n");
+//    msg("Radio int: rx_ready");
 
 //    // Get this payload and dump it
-    sigstat_e ackstate;
+    uint8_t ackstate;
     radio.read(&ackstate, sizeof(ackstate));
-    printf("Received ack state = %s\r\n", getStateStr(ackstate));
+    printf("Received ack state = %s\r\n", int2bin(ackstate));
   }
 
-//  printf("EXIT radioInterrupt()\r\n");
+//  msg("EXIT radioInterrupt()");
 }
 
-void transmitState(sigstat_e s) {
-  printf("Sending state to remote: %s\r\n", getStateStr(s));
-  sigstat_e s2 = s;
-  radio.startWrite(&s2, sizeof(sigstat_e));
+void transmitState(uint8_t s) {
+  printf("Sending state to remote: %s\r\n", int2bin(s));
+  radio.startWrite(&s, sizeof(s));
   radioFlushHack();
 }
 
-void printBadStateChange(sigstat_e oldstate, sigstat_e newstate) {
-  printf("Invalid state change request. Old=%s; New=%s\r\n", getStateStr(oldstate), getStateStr(newstate));
+void printBadStateChange(uint8_t oldstate, uint8_t newstate) {
+  printf("Invalid state change request. Old=%s; New=%s\r\n", int2bin(oldstate), int2bin(newstate));
 }
 
-void setState(sigstat_e newstate) {
-  printf("  Current state=%s; Requested state=%s\r\n", getStateStr(state), getStateStr(newstate));
-  if (state == newstate && STATE_READY != state) {
-    printf("setState: nothing to do!\r\n");
+void setState(uint8_t newstate) {
+  printf("Current state=%s; Requested state=%s\r\n", int2bin(state), int2bin(newstate)); // these 2 values match in serial stream, even when they shouldn't.  Code behaves as expected, though.  ???
+  if (state == newstate && !(STATE_READY & (state & STATE_MASK))) {
+    msg("setState: nothing to do!");
     return;
   }
   bool updateState = true;
 
-  switch (newstate) {
+  uint8_t treestate = newstate & STATE_MASK;
+  switch (treestate) {
 
     case STATE_PWRON:
-      printf("STATE_PWRON\r\n");
+      msg("STATE_PWRON");
+      lcd.setCursor(0,0); // col, row
+      lcd.print("Launch Control: ");
+      lcd.setCursor(0,1);
+      lcd.print("[ OPERATIONAL ] ");
       break;
 
     case STATE_READY:
       // No validation check - *always* go to ready-state when requested
-      printf("case STATE_READY\r\n");
+      msg("case STATE_READY");
       lcd.clear();
-      lcd.print("Launch sequence:");
+      lcd.print("Launch Control:");
       lcd.setCursor(0,1);
-      lcd.print("---- RESET ----");
-//      playWav(WAV_RESET);
+      lcd.print("-LOAD VEHICLES-");
       break;
 
     case STATE_SET:
-      printf("STATE_SET\r\n");
-      if (STATE_READY != state) {
+      msg("STATE_SET");
+      if (STATE_READY != (state & STATE_MASK)) {
         printBadStateChange(state, newstate);
         updateState = false;
         break;
       }
       lcd.clear();
-      lcd.print("Launch sequence:");
+      lcd.print("Launch Control:");
       lcd.setCursor(0,1);
       lcd.print("**** ARMED ****");
-//      playWav(WAV_ARMED);
       break;
 
     case STATE_GO:
-      printf("STATE_GO\r\n");
+      msg("STATE_GO");
       // Note: We test state after each LED in case the Ready/Reset interrupt 
-      if (STATE_SET != state) {
+      if (STATE_SET != (state & STATE_MASK)) {
         printBadStateChange(state, newstate);
         updateState = false;
         break;
       }
       lcd.clear();
-      lcd.print("Launch sequence:");
+      lcd.print("Launch Control:");
       lcd.setCursor(0,1);
       lcd.print("!!!!!! GO !!!!!!");
-//      playWav(WAV_LAUNCH);
       break;
 
     case STATE_FINISH:
-      printf("STATE_FINISH\r\n");
-      if (STATE_GO != state) {
+      msg("STATE_FINISH");
+      if (STATE_GO != (state & STATE_MASK)) {
         printBadStateChange(state, newstate);
         updateState = false;
         break;
@@ -439,16 +384,18 @@ void setState(sigstat_e newstate) {
 
     default:
       // Unknown state
-      printf("!!!!! UNKNOWN STATE !!!!!\r\n");
-      state = STATE_UNDEF;
+      msg("!!!!! UNKNOWN STATE !!!!!");
       lcd.clear();
       lcd.print("SYSTEM FAULT!");
+      lcd.setCursor(0,1);
+      lcd.print(int2bin(treestate));
+      state = STATE_UNDEF;
       break;
   }
 
   if (updateState) {
     state = newstate;
-    printf("New current state=%s\r\n", getStateStr(state));
+    printf("New current state=%s\r\n", int2bin(state));
     playState(state);
   }
 }
@@ -483,8 +430,6 @@ bool isButtonPressed(uint8_t pin) {
       lastBtnMs = t;
       lastBtnPin = pin;
       printf("Button press on pin %i\r\n", pin);
-
-      ad.checkConfirm(pin);
     }
   }
   return result;
@@ -530,31 +475,3 @@ void radioFlushHack() {
    */
 }
 
-void updateRemoteStateFromSignalBoardState() {
-//  printf("ENTER updateRemoteStateFromSignalBoardState()\r\n");
-  sigstat_e s = QUERY_STATE;
-  printf("Writing %s", getStateStr(s));
-  radio.startWrite(&s, sizeof(s));
-  radioFlushHack();
-  // interrupt handler will update the state from the ack received from the signalboard
-//  printf("EXIT updateRemoteStateFromSignalBoardState()\r\n");
-}
-
-const char * getStateStr(sigstat_e s) {
-  switch (s) {
-    case STATE_PWRON: return "STATE_PWRON";
-    case STATE_READY: return "STATE_READY";
-    case STATE_SET: return "STATE_SET";
-    case STATE_GO: return "STATE_GO"; // The three STATE_PRE_GO_n states are purely transitional, for the countdown, and are not regarded as signal board states
-    case STATE_FINISH: return "STATE_FINISH";
-    case QUERY_STATE: return "*QUERY_STATE"; // not really a state, used to query current state
-    case WAV_BANK0_STATE: return "WAV_BANK0_STATE";
-    case WAV_BANK1_STATE: return "WAV_BANK1_STATE";
-    case WAV_BANK2_STATE: return "WAV_BANK2_STATE";
-    case MODE_AUTOD: return "MODE_AUTOD";
-    case MODE_SPACE: return "MODE_SPACE";
-    case MODE_PINEWOOD: return "MODE_PINEWOOD";
-    case STATE_UNDEF: return "STATE_UNDEF";
-    default: return "*UNKNOWN STATE*";
-  }
-}

@@ -51,5 +51,6 @@ rf24_pa_dbm_e RadioPowerSwitch::getPower(bool & changed) {
       power = RF24_PA_MAX;
       break;
   }
+
   return power;
 }
