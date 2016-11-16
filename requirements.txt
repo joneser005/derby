@@ -1,0 +1,4 @@
+Django==1.10.3
+tornado==4.4.2
+pyserial
+Pillow==2.3.0

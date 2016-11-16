@@ -78,7 +78,7 @@ class Group(models.Model):
     ''' e.g. Scouts or Open Division or Finals '''
     name = models.CharField(max_length=50, unique=True) 
     stamp = models.DateTimeField(auto_now=True)
-    racers = models.ManyToManyField(Racer, blank=True, null=True)
+    racers = models.ManyToManyField(Racer, blank=True)
     
     def count(self):
         return self.racers.count()

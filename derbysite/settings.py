@@ -1,7 +1,8 @@
 # Django settings for derbysite project.
+import os
+CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
 
 DEBUG = True
-TEMPLATE_DEBUG = True
 
 ADMINS = (
     ('Robb Jones', 'robb.kc.jones@gmail.com'),
@@ -12,7 +13,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '/home/robb/python/derby/derby.db',                      # Or path to database file if using sqlite3.
+        'NAME': os.path.join(CURRENT_PATH, '../derby.db'), # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': '', #robb
         'PASSWORD': '', #alb....r
@@ -53,27 +54,19 @@ TIME_INPUT_FORMATS = ('%H:%M:%S.%f',)  # '14:30:59.000200'
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = False
 
-
-import os
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
-MEDIA_ROOT = os.path.join(CURRENT_PATH, 'media').replace('\\','/')
-# MEDIA_ROOT = '/derbysite/runner/media'
-MEDIA_URL = '/media/'
-
-# Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/var/www/example.com/media/"
-# MEDIA_ROOT = '/home/robb/python/derby/derbysite/media/'
-
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://example.com/media/", "http://media.example.com/"
 # MEDIA_URL = 'http://agrippa:8000/admin/runner/media/'
+MEDIA_ROOT = os.path.join(CURRENT_PATH, 'media')
+MEDIA_URL = '/media/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
-STATIC_ROOT = '/home/robb/python/derby/hosted-static/'
+STATIC_ROOT = os.path.join(CURRENT_PATH, '../hosted-static/')
+#print 'STATIC_ROOT={}'.format(STATIC_ROOT)
 
 # URL prefix for static files.
 # Example: "http://example.com/static/", "http://static.example.com/"
@@ -84,7 +77,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/robb/python/derby/static-files/',
+    os.path.join(CURRENT_PATH, '../static-files/'),
 )
 
 # List of finder classes that know how to find static files in
@@ -98,12 +91,32 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'pegzkahb1e0q25wi8+c7tc)qg_vs$wz6_ql5owq=lt-!(04u4c'
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            # insert your TEMPLATE_DIRS here
+            ''.join((CURRENT_PATH, '../runner/templates')),
+        ],
+        'OPTIONS': {
+            'debug': True,
+            'context_processors': [
+            'django.contrib.auth.context_processors.auth',
+            'django.template.context_processors.debug',
+            'django.template.context_processors.i18n',
+            'django.template.context_processors.media',
+            'django.template.context_processors.static',
+            'django.template.context_processors.tz',
+#  TODO: This was in 1.7, not sure if needed in 1.10:      "django.core.context_processors.request",
+            'django.contrib.messages.context_processors.messages'
+        ],
+        'loaders': [
+            'django.template.loaders.filesystem.Loader',
+            'django.template.loaders.app_directories.Loader',
+        ],
+    }
+    }
+]
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
@@ -120,38 +133,29 @@ ROOT_URLCONF = 'derbysite.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'derbysite.wsgi.application'
 
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    '/home/robb/python/derby/runner/templates/',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-"django.contrib.auth.context_processors.auth",
-"django.core.context_processors.debug",
-"django.core.context_processors.i18n",
-"django.core.context_processors.media",
-"django.core.context_processors.static",
-"django.core.context_processors.tz",
-"django.core.context_processors.request",
-"django.contrib.messages.context_processors.messages",
-# "runner.context_processors.race_control"
-)
+# Django 1.7, moved to 'TEMPLATES' in (or before) v1.10:
+# TEMPLATE_CONTEXT_PROCESSORS = (
+# "django.contrib.auth.context_processors.auth",
+# "django.core.context_processors.debug",
+# "django.core.context_processors.i18n",
+# "django.core.context_processors.media",
+# "django.core.context_processors.static",
+# "django.core.context_processors.tz",
+# "django.core.context_processors.request",
+# "django.contrib.messages.context_processors.messages",
+# # "runner.context_processors.race_control"
+# )
 
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 INSTALLED_APPS = (
 #     'django_admin_bootstrapped',
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.humanize',
@@ -255,3 +259,6 @@ LOGGING = {
         }
     }
 }
+
+import django
+django.setup()

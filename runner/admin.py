@@ -35,6 +35,7 @@ class RacerAdminForm(forms.ModelForm):
 
     class Meta:
         model = models.Racer
+	fields = '__all__'
 
 class RacerAdmin(admin.ModelAdmin):
     form = RacerAdminForm 

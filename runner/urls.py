@@ -1,8 +1,8 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import *
 import views
 
 # /runner/
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^race/get_last_update$', views.get_last_update, name='get_last_update'),
     url(r'^race/(?P<race_id>(\d+|current))/(?P<view>(status))$', views.overhead, name='status'),
@@ -18,4 +18,4 @@ urlpatterns = patterns('',
     url(r'^race/(?P<race_id>(\d+|current))/setrunresult/$', views.setRunResult, name='set_run_result'),
     url(r'^race/(?P<race_id>(\d+))/getswapcandidates/$', views.getSwapCandidates, name='get_swap_candidates'),
     url(r'^race/(?P<race_id>(\d+))/swapracers/$', views.swapRacers, name='swap_racers')
-)
+]
