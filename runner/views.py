@@ -43,7 +43,8 @@ def get_last_update(request):
 
 def index(request):
     ''' Django view: index page '''
-    return render(request, 'index.html', context_instance=RequestContext(request))
+   # return render(request, 'index.html', context_instance=RequestContext(request))
+    return render(request, 'index.html')
 
 def seedRace(request, race_id):
     log.debug('Entered seedRace')
