@@ -86,3 +86,5 @@ admin.site.register(models.RunPlace)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Current, CurrentAdmin)
 admin.site.register(models.RacerName, RacerNameAdmin)
+admin.site.site_header = 'Pack 57 Race Management'
+admin.site.site_title = 'Pack 57 Race Management'
