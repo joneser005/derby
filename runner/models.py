@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from django.db import models
 
 from singleton_model import SingletonModel
+from django.template.defaultfilters import default
 
 log = logging.getLogger('runner')
 
@@ -26,7 +27,7 @@ class Person(models.Model):
                                                     ('WEBELOS I','WEBELOS I'),
                                                     ('WEBELOS II', 'WEBELOS II'),
                                                     ('None', 'n/a')])
-    pack = models.CharField(max_length=5)
+    pack = models.CharField(max_length=5, default='57')
     picture = models.ImageField(upload_to='people', blank=True, null=True, editable=False)
     stamp = models.DateTimeField(auto_now=True)
 
