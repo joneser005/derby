@@ -6,6 +6,7 @@ DEBUG = True
 
 ADMINS = (
     ('John Schleigh', 'johnschleigh@gmail.com'),
+    ('admin', ''),
 )
 
 MANAGERS = ADMINS
