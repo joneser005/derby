@@ -63,7 +63,7 @@ class Racer(models.Model):
 
     def __unicode__(self):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
-            ' (' + self.person.name_first + ' ' + self.person.name_last + ')'
+            ' (' + self.person.name_first + ' ' + self.person.name_last + ' : ' + self.person.rank + ')'
 
     def __str__(self):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
