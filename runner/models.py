@@ -101,6 +101,11 @@ class Race(models.Model):
             #log.debug('race {0} yielding run_seq={1}'.format(self.name, run.run_seq))
             yield run
 
+    def observer_url(self):
+        return format_html('<a href="/runner/race/{0}/standings">Observer</a>', self.pk)
+    
+    observer_url.short_description = 'Race Link'
+    
     def __unicode__(self):
         return self.name
 
@@ -162,3 +167,9 @@ class Current(SingletonModel):
 
     def __unicode__(self):
         return 'Current: {} - {}, current run={}'.format(self.race.derby_event, self.race, self.run)
+    
+    def control_url(self):
+        return format_html('<a href="/runner/race/current/control">Control</a>')
+    
+    control_url.short_description = 'Race Control Link'
+    
