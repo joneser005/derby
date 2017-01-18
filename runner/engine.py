@@ -191,6 +191,7 @@ class EventManager:
                 lane_tumbler[lane-1] = tumbler
 
             # Create the Run and RunPlace records based on above
+            lane = race.lane_ct
             log.info('Creating Run and RunPlace records.....')
             lane_header = '  Lane #'
             lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))

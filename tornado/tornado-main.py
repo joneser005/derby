@@ -62,15 +62,18 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
 def main():
     wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
+    CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
 
-    static_path = '/home/robb/python/derby/hosted-static/'
+    static_path = os.path.join(CURRENT_PATH, '../hosted-static/')
+    print('static_path = {}'.format(static_path))
     favicon_path = static_path
 
-    handlers = [#(r'/favicon.ico', tornado.web.StaticFileHandler, {'path': favicon_path}),
+    handlers = [
                 (r'/(favicon.ico)', tornado.web.StaticFileHandler, {'path': static_path}),
                 (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static_path}),
                 (r'/socket/refresh/', WebSocketHandler),
-                (r'.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)), ]
+                (r'.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
+	]
 
     tornado_app = tornado.web.Application(handlers)
     django.setup() # Jan2014: Added for 1.7
