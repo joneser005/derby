@@ -1,7 +1,7 @@
 #include "RadioPowerSwitch.h"
 
-RadioPowerSwitch::RadioPowerSwitch(uint8_t pin[5]) {
-  for (uint8_t i=0; i<5; i++) {
+RadioPowerSwitch::RadioPowerSwitch(uint8_t pin[3]) {
+  for (uint8_t i=0; i<3; i++) {
     _pin[i] = pin[i];   
   }
 }
@@ -12,8 +12,6 @@ uint8_t RadioPowerSwitch::getSwitchPosition() {
   uint8_t p0 = LOW == digitalRead(_pin[0]);
   uint8_t p1 = LOW == digitalRead(_pin[1]);
   uint8_t p2 = LOW == digitalRead(_pin[2]);
-  uint8_t p3 = LOW == digitalRead(_pin[3]);
-  uint8_t p4 = LOW == digitalRead(_pin[4]);
 
   if (p0 && !p1) curr = 0;      // RF24 off
   else if (p0 && p1) curr = 1;  // Min
@@ -25,16 +23,11 @@ uint8_t RadioPowerSwitch::getSwitchPosition() {
 	return curr;
 }
 
-rf24_pa_dbm_e RadioPowerSwitch::getPower(bool & changed) {
+bool RadioPowerSwitch::checkSwitch(rf24_pa_dbm_e & power) {
+  bool result = false;
+  uint8_t pos = getSwitchPosition();
 
-  uint8_t p = getSwitchPosition();
-  if (_last != p) {
-     _last = p;
-     changed = true;
-  }
-
-  rf24_pa_dbm_e power = RF24_PA_LOW;
-  switch(p) {
+  switch(pos) {
     case 0:
       power = RF24_PA_MIN;
       break;
@@ -50,7 +43,15 @@ rf24_pa_dbm_e RadioPowerSwitch::getPower(bool & changed) {
     case 4:
       power = RF24_PA_MAX;
       break;
+    default:
+      power = RF24_PA_LOW;
+      break;
   }
 
-  return power;
+  if (_last != power) {
+     _last = power;
+     result = true;
+  }
+
+  return result;
 }

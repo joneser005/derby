@@ -208,28 +208,25 @@ void loop() {
   }
 }
 
+
+//TODO: 1/31/2016: TEST ME - rewrote the radio code below/in RadioPowerSwitch, just need to remove this comment and test
 // Radio power
 void checkRadioPowerSwitch(bool inSetup) {
-  uint8_t pos = radioPowerSwitch.getSwitchPosition();
-  rf24_pa_dbm_e power = radioPowerSwitch.getPower(changed);
-  if (changed) {
+  rf24_pa_dbm_e power;
+  if (radioPowerSwitch.checkSwitch(power)) {
     radio.setPALevel(power);
-    changed = false;
     if (!inSetup) {
-      switch (pos) {
-        case 0:
+      switch (power) {
+        case RF24_PA_MIN:
           playWav(WAV_LOW);
           break;
-        case 1:
-          playWav(WAV_OTHERLOW);
-          break;
-        case 2:
+        case RF24_PA_LOW:
           playWav(WAV_MED);
           break;
-        case 3:
+        case RF24_PA_HIGH:
           playWav(WAV_HI);
           break;
-        case 4:
+        case RF24_PA_MAX:
           playWav(WAV_FULL);
           break;
       }
