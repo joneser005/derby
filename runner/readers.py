@@ -89,9 +89,8 @@ class MockFastTrackResultReader(threading.Thread):
             time.sleep(1)
             now = datetime.datetime.now()
             rawResult = self.getMockResult()
-            lastResult = '{:%Y-%m-%d %H:%M:%S.%f}:'.format(now) + rawResult
-            self.tracklog.info(lastResult)
-            self.resultsCallback(lastResult)
+            self.tracklog.info(rawResult)
+            self.resultsCallback(rawResult)
             log.info('[MOCK] run() done!')
             log.info('EXIT while not self.stopEvent.is_set():')
         log.info('EXIT run')
@@ -157,14 +156,13 @@ class FastTrackResultReader(threading.Thread):
                         # == '\n'
                         rawResult = ''.join(currentResult)
                         if "VERSION" in rawResult:
-                            # Note we aren't saving the version string in lastResult, and same for the '@' reset signal
+                            # Note we aren't saving the version string in rawResult, and same for the '@' reset signal
                             self.tracklog.info('Track init signal received.  [{}]  Start the cars when ready.'.format(rawResult))
                             self.resetCallback()
                         else:
                             now = datetime.datetime.now()
-                            lastResult = '{:%Y-%m-%d %H:%M:%S.%f}:'.format(now) + rawResult
-                            self.tracklog.info(lastResult)
-                            self.resultsCallback(lastResult)
+                            self.tracklog.info(rawResult)
+                            self.resultsCallback(rawResult)
                         currentResult = []
 
                 # Heartbeat
