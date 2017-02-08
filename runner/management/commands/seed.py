@@ -3,6 +3,7 @@ import logging
 from runner.models import Race, Run, Group, Current
 from runner.engine import EventManager
 from django.template.defaultfilters import default
+from sys import stderr
 
 log = logging.getLogger('runner')
 
@@ -31,6 +32,9 @@ class Command(BaseCommand):
             try:
                 race = Race.objects.get(pk=race_id)
             except:
+                self.stderr.write('Available races:')
+                for race in Race.objects.all().order_by('derby_event__event_date', 'level'):
+                    self.stderr.write('Race id/name: {}/{} ({}/{})'.format(race.pk, race.name, race.derby_event.event_name, race.derby_event.event_date))
                 raise CommandError('Race "%s" does not exist' % race_id)
 
         if options['reset']:
@@ -46,11 +50,6 @@ class Command(BaseCommand):
                     return
             else:
                 race.run_set.all().delete()
-
-        if options['list']:
-            print('Available races:')
-            for race in Race.objects.all().order_by('derby_event__event_date', 'level'):
-                print('Race id/name: {}/{} ({}/{})'.format(race.pk, race.name, race.derby_event.event_name, race.derby_event.event_date))
                     
         log.info('Seeding race {}/{}'.format(race_id, race.name))
         rm = EventManager()

@@ -1,0 +1,16 @@
+[Unit]
+Description=Pinewood Derby tmux
+Documentation=man:tmux(1)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=pack57
+Group=pack57
+ExecStart=/usr/bin/tmux new-session -d -s derby /home/pack57/derby/tornado-server.sh
+ExecStop=/usr/bin/tmux kill-session -t derby
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target
