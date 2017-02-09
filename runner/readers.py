@@ -23,7 +23,8 @@ def laneTimes(result_string):
 # result_string=2015-01-13 21:31:35.431482:4.41579693732=5.3072100027=5.66516712721=3.13101328584=5.6069078248=4.39635514875
 
     log.debug('result_string={}'.format(result_string))
-    lane_times = result_string.translate(None, '!ABCDEF').split('=')
+    lane_times = result_string.translate(None, '!"#$%&\'(ABCDEF').split('=')
+
     result = dict(zip(range(lanes+2), lane_times))
 
     for x in result:
@@ -87,11 +88,9 @@ class MockFastTrackResultReader(threading.Thread):
         while not self.stopEvent.is_set():
             log.info('ENTER while not self.stopEvent.is_set():')
             time.sleep(1)
-            now = datetime.datetime.now()
             rawResult = self.getMockResult()
-            lastResult = '{:%Y-%m-%d %H:%M:%S.%f}:'.format(now) + rawResult
-            self.tracklog.info(lastResult)
-            self.resultsCallback(lastResult)
+            self.tracklog.info(rawResult)
+            self.resultsCallback(rawResult)
             log.info('[MOCK] run() done!')
             log.info('EXIT while not self.stopEvent.is_set():')
         log.info('EXIT run')
@@ -157,14 +156,12 @@ class FastTrackResultReader(threading.Thread):
                         # == '\n'
                         rawResult = ''.join(currentResult)
                         if "VERSION" in rawResult:
-                            # Note we aren't saving the version string in lastResult, and same for the '@' reset signal
+                            # Note we aren't saving the version string in rawResult, and same for the '@' reset signal
                             self.tracklog.info('Track init signal received.  [{}]  Start the cars when ready.'.format(rawResult))
                             self.resetCallback()
                         else:
-                            now = datetime.datetime.now()
-                            lastResult = '{:%Y-%m-%d %H:%M:%S.%f}:'.format(now) + rawResult
-                            self.tracklog.info(lastResult)
-                            self.resultsCallback(lastResult)
+                            self.tracklog.info(rawResult)
+                            self.resultsCallback(rawResult)
                         currentResult = []
 
                 # Heartbeat

@@ -191,6 +191,7 @@ class EventManager:
                 lane_tumbler[lane-1] = tumbler
 
             # Create the Run and RunPlace records based on above
+            lane = race.lane_ct
             log.info('Creating Run and RunPlace records.....')
             lane_header = '  Lane #'
             lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))
@@ -292,24 +293,6 @@ where run.race_id = c.race_id
                 where rp3.run_id = rp.run_id) '''.format(lane, run_seq, swapee_racer_id)
 #         print(sql)
         cur.execute(sql)
-#         cur.execute('''select rp.racer_id as racer_id, run.run_seq as run_seq, r.name as name, r.picture as img_url, p.rank as rank
-# from runner_runplace rp
-# join runner_run run on run.id = rp.run_id
-# join runner_current c on c.race_id = run.race_id
-# join runner_racer r on r.id = rp.racer_id
-# join runner_person p on p.id = r.person_id
-# where run.race_id = c.race_id
-#   and rp.lane = %s
-#   and run.run_completed = 0
-#   and rp.seconds is null /* redundant/safety */
-#   and rp.racer_id not in (select rp2.racer_id
-#                             from runner_runplace rp2
-#                             join runner_run run2 on (run2.id = rp2.run_id)
-#                            where run2.run_seq = %s)
-#   and %s not in (select rp3.racer_id
-#                 from runner_runplace rp3
-#                 where rp3.run_id = rp.run_id) ''',
-#             [lane, run_seq, swapee_racer_id])
         return cur
 
     def getSwapCandidatesList(self, run_seq, lane, swapee_racer_id):
