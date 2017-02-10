@@ -11,94 +11,112 @@ from argparse import Action
 log = logging.getLogger('runner')
 
 class Command(BaseCommand):
-    args = '''{action} {args...}
-    
-Print list of races:
-    python manage.py print races
 
-Print Racer <==> Run matrix:
-    python manage.py print racerRunMatrix {race_id}
+# TODO: Reconcile this help texts scattered around in this code
 
-Print race results:
-*    python manage.py print racerResults {race_id} [racer_id] [summary]
-
-Print Run results:
-*   python manage.py print laneResults {race_id}
-    python manage.py print laneAssignments {race_id}
-
-Print Race Summary and Standings:
-*   python manage.py print standings {race_id}
-'''
-
-    help = 'Prints to stdout various race info/reports.'
+    help = """manage.py print {action} {args...}
+{action}
+    help - print this message
+    races - print list of races
+    runmatrix - print Racer/Run matrix
+                    ex: python manage.py print runmatrix {race_id}
+    results - print race results
+                    ex: python manage.py print results {race_id} [racer_id] [--summary]
+    laneassignments - print Race Lane assignments
+                    ex: python manage.py print laneassignments {race_id}
+    laneresults - print Run results by Lane
+                    ex: python manage.py print laneresults {race_id}
+"""
+#     standings - print Race standings
+#                     ex: python manage.py print standings {race_id}
 
     def _usage(self, *args):
         print(self.help)
-        print(self.args)
-        
+
     def printRaces(self):
         print("Races:")
         for race in Race.objects.all().order_by('derby_event__event_date', 'level', 'id'):
             print('\trace_id={0}, {1} - {2}'.format(race.id, race, race.derby_event))
 
+    def printResults(self, race, racer_id, summary):
+        r = Reports()
+        if racer_id:
+            racer = Racer.objects.get(pk=racer_id)
+        else:
+            racer = None
+ 
+        r.printPrettyRaceStats(race, racer, summaryOnly=summary)
+
+    def add_arguments(self, parser):
+
+        parser.add_argument(
+            'action',
+            choices=['help',
+                     'races',
+                     'runmatrix',
+                     'results',
+                     'laneresults',
+                     'laneassignments',
+                     'standings'],
+            default = 'help',
+            help=self.help,
+        )
+
+        parser.add_argument('race_id', nargs='?')
+        parser.add_argument('racer_id', nargs='?')
+        parser.add_argument('--summary', action='store_true', default=False)
+
     def handle(self, *args, **options):
-        if len(args) == 0:
-            self._usage(args)
-            return
+        print('options={}'.format(options))
 
-        action = args[0].lower()
-        cmd_args = list(args)
-        print('cmd_args={}'.format(cmd_args))
+        action = options['action']
 
-        if 'racerresults' == action:
-            if len(cmd_args) not in (2, 3, 4):
-                self._usage(args)
-                return
+        race_id = options['race_id']
+        race = None
+        if race_id:
+            race = Race.objects.get(pk=race_id)
 
-            race = Race.objects.get(pk=cmd_args[1])
-            racer_id = None
-            summaryOnly = False
-            for arg in cmd_args[2:]:
-                if 'summary' == arg:
-                    summaryOnly = True
-                else:
-                    # HACK: We aren't checking to see if this was specified twice
-                    try:
-                        racer_id = int(arg)
-                    except ValueError:
-                        print('Unknown argument: {}'.format(arg))
-                        return
-            r = Reports()
-            if racer_id:
-                racer = Racer.objects.get(pk=racer_id)
-            else:
-                racer = None
-    
-            r.printPrettyRaceStats(race, racer, summaryOnly=summaryOnly)
-        elif 'standings' == action:
-            r = Reports()
-            race = Race.objects.get(pk=cmd_args[1])
-            r.printStandings(race)  # TODO: Implement me!
+        racer_id = options['racer_id']  # let callee lookup racer
+
+        summary = options['summary']
+
+        if 'help' == action:
+            self._usage()
+
         elif 'races' == action:
             self.printRaces()
-        elif 'racerrunmatrix' == action:
+
+        elif action in ('raceresults', 'results'):
+            self.printResults(race, racer_id, summary)
+
+        elif 'standings' == action:
+            raise CommandError('Not implemented')
+#             r = Reports()
+#             r.printStandings(race)  # TODO: Implement me!
+
+        elif 'runmatrix' == action:
+            if not race:
+                raise CommandError('race_id not specified or not found')
             r = Reports()
-            race = Race.objects.get(pk=cmd_args[1])
             r.printRacerRunMatrix(race)
+
         elif 'laneassignments' == action:
-            print('in {}'.format(action))
+            if not race:
+                raise CommandError('race_id not specified or not found')
             r = Reports()
-            race = Race.objects.get(pk=cmd_args[1])
             r.printLaneAssignments(race)
+
         elif 'laneresults' == action:
+            if not race:
+                raise CommandError('race_id not specified or not found')
             r = Reports()
-            race = Race.objects.get(pk=cmd_args[1])
             r.printLaneResultDetail(race)
+
         elif 'scoresheet' == action:  # {race_id}
-            pass
+            raise CommandError('Not implemented')
+
         elif 'fallbackscoresheet' == action:  # {race_id}  (print by Rank)
-            pass
+            raise CommandError('Not implemented')
+
         else:
-            print('Unrecognized command: {}'.format(action))
-            return
-        return
+            raise CommandError('Unrecognized command: {}'.format(action))
