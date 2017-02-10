@@ -27,7 +27,7 @@ from derbysite.settings import LOGGING
 
 logging.config.dictConfig(LOGGING)
 log = logging.getLogger('tornado')
-define('port', type=int, default=80)
+define('port', type=int, default=8080)
 tornado.options.parse_command_line()
 
 clients = {}

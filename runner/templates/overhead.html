@@ -327,7 +327,7 @@ function updateStandings() {
  *****************************************************************************/
 
 function listenForUpdates() {
-	var RACE_UPDATE_PORT = 80;
+	var RACE_UPDATE_PORT = location.port;
 	var url = 'ws://' + document.location.hostname + ':' + RACE_UPDATE_PORT + '/socket/refresh/';
 
 	console.log('Connecting to ws-refresh at ', url, '...');
@@ -371,7 +371,7 @@ function updateStatusbar(pct) {
 
 function startup() {
 	console.log("Entering startup()");
-	updateStatus()
+	updateStatus();
 	updateStandings();
 
 	$("button").button();
@@ -385,7 +385,7 @@ function startup() {
 		$('.view_standings').css('display','inline-block');
 		$('.view_status').css('display','none');
 	});
-;
+
 	$('.view_standings').css('display','inline-block');
 	$('.view_status').css('display','none');
 

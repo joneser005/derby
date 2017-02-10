@@ -69,11 +69,11 @@ class DerbyEventAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
 
 class RaceAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'derby_event', 'racer_group', 'level', 'lane_ct']
+    list_display = ['id', 'name', 'derby_event', 'racer_group', 'level', 'lane_ct', 'observer_url']
     readonly_fields = ('id',)
 
 class CurrentAdmin(admin.ModelAdmin):
-    list_display = ['race', 'run', 'stamp']
+    list_display = ['race', 'run', 'stamp', 'control_url']
     list_display_links = ['race', 'run', 'stamp']
     readonly_fields = ('id', 'stamp')
 
@@ -86,3 +86,5 @@ admin.site.register(models.RunPlace)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Current, CurrentAdmin)
 admin.site.register(models.RacerName, RacerNameAdmin)
+admin.site.site_header = 'Pack 57 Race Management'
+admin.site.site_title = 'Pack 57 Race Management'

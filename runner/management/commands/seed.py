@@ -3,6 +3,7 @@ import logging
 from runner.models import Race, Run, Group, Current
 from runner.engine import EventManager
 from django.template.defaultfilters import default
+from sys import stderr
 
 log = logging.getLogger('runner')
 

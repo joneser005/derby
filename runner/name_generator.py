@@ -12,8 +12,8 @@ nouns = []
 adjectives = []
 
 def load(reload_files=False,
-         fnoun='/home/robb/python/derby/sql/nouns.txt',
-         fadj='/home/robb/python/derby/sql/adjectives.txt'):
+         fnoun=os.path.join(CURRENT_PATH,  '../sql/nouns.txt'),
+         fadj=os.path.join(CURRENT_PATH,  '../sql/adjectives.txt')):
     global nouns
     global adjectives
 
@@ -58,7 +58,7 @@ def main():
 #     for x in range(100):
 #         print make_names()
     print('Generating sql inserts...')
-    with open('/home/robb/python/derby/sql/name_inserts.sql', 'w') as f:
+    with open(os.path.join(CURRENT_PATH,  '../sql/name_inserts.sql'), 'w') as f:
         for n in nouns:
             for a in adjectives:
                 f.write(getInsert(getFormat1(n, a)))

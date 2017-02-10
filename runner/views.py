@@ -19,7 +19,7 @@ stopEvent = threading.Event() #for track control
 lastTrackResult = None
 
 def isControl(request):
-    return request.user.is_authenticated() and request.user.username == 'robb'
+    return request.user.is_authenticated() and request.user.is_superuser
 
 def isNotControl(request):
     ''' Convenience/readability '''
