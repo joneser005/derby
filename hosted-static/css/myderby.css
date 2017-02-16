@@ -18,7 +18,8 @@ body {
 
 
 .racer_pic {
-	height: 320px;
+	max-height: 150px;
+	max-width: 300px;
 }
 
 

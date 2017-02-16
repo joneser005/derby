@@ -145,7 +145,9 @@ void setup() {
   state = STATE_UNDEF;
 }
 
+void heartbeat();
 void loop() {
+  heartbeat();
   if (pending_state != state || force_state_change) {
     setState(pending_state);
     pending_state = state;
@@ -324,3 +326,26 @@ void set_lights(uint8_t light_num, uint32_t c) {
    }
    strip.show();
 }
+
+unsigned long previousMillis = 0;
+const unsigned long intervalLow = 2000;
+const unsigned long intervalHigh = 200;
+unsigned long interval = intervalLow;
+int ledState = LOW;
+void heartbeat() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+
+    if (ledState == LOW) {
+      ledState = HIGH;
+      interval = intervalHigh;
+    } else {
+      ledState = LOW;
+      interval = intervalLow;
+    }
+
+    digitalWrite(13, ledState);
+  }
+}
+

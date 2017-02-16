@@ -5,7 +5,8 @@ CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
 DEBUG = True
 
 ADMINS = (
-    ('Robb Jones', 'robb.kc.jones@gmail.com'),
+    ('John Schleigh', 'johnschleigh@gmail.com'),
+    ('admin', ''),
 )
 
 MANAGERS = ADMINS
@@ -30,7 +31,7 @@ ALLOWED_HOSTS = ['*']
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'America/New_York'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -98,21 +99,23 @@ TEMPLATES = [
             # insert your TEMPLATE_DIRS here
             ''.join((CURRENT_PATH, '../runner/templates')),
         ],
+        'APP_DIRS': False,
         'OPTIONS': {
             'debug': True,
             'context_processors': [
             'django.contrib.auth.context_processors.auth',
             'django.template.context_processors.debug',
+            'django.template.context_processors.request',
             'django.template.context_processors.i18n',
             'django.template.context_processors.media',
             'django.template.context_processors.static',
             'django.template.context_processors.tz',
-#  TODO: This was in 1.7, not sure if needed in 1.10:      "django.core.context_processors.request",
             'django.contrib.messages.context_processors.messages'
         ],
         'loaders': [
             'django.template.loaders.filesystem.Loader',
             'django.template.loaders.app_directories.Loader',
+            'admin_tools.template_loaders.Loader',
         ],
     }
     }
@@ -156,6 +159,10 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    #'admin_tools',
+    #'admin_tools.theming',
+    #'admin_tools.menu',
+    #'admin_tools.dashboard',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.humanize',

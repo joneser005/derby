@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from django.db import models
 
 from singleton_model import SingletonModel
+from django.template.defaultfilters import default
 
 log = logging.getLogger('runner')
 
@@ -26,7 +27,7 @@ class Person(models.Model):
                                                     ('WEBELOS I','WEBELOS I'),
                                                     ('WEBELOS II', 'WEBELOS II'),
                                                     ('None', 'n/a')])
-    pack = models.CharField(max_length=5)
+    pack = models.CharField(max_length=5, default='57')
     picture = models.ImageField(upload_to='people', blank=True, null=True, editable=False)
     stamp = models.DateTimeField(auto_now=True)
 
@@ -62,7 +63,7 @@ class Racer(models.Model):
 
     def __unicode__(self):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
-            ' (' + self.person.name_first + ' ' + self.person.name_last + ')'
+            ' (' + self.person.name_first + ' ' + self.person.name_last + ' : ' + self.person.rank + ')'
 
     def __str__(self):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
@@ -100,6 +101,11 @@ class Race(models.Model):
             #log.debug('race {0} yielding run_seq={1}'.format(self.name, run.run_seq))
             yield run
 
+    def observer_url(self):
+        return format_html('<a href="/runner/race/{0}/standings">Observer</a>', self.pk)
+    
+    observer_url.short_description = 'Race Link'
+    
     def __unicode__(self):
         return self.name
 
@@ -161,3 +167,9 @@ class Current(SingletonModel):
 
     def __unicode__(self):
         return 'Current: {} - {}, current run={}'.format(self.race.derby_event, self.race, self.run)
+    
+    def control_url(self):
+        return format_html('<a href="/runner/race/current/control">Control</a>')
+    
+    control_url.short_description = 'Race Control Link'
+    

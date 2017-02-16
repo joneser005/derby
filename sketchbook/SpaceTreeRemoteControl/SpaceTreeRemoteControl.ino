@@ -10,7 +10,7 @@
 #include <TMRpcm.h>
 #include <SPI.h>
 #include "nRF24L01.h"
-#include "RF24.h"
+#include "RF24.h" // TMRh20 fork
 #include "printf.h"
 #include "ExternDefs.h"
 #include "Mode3Switch.h"
@@ -33,7 +33,7 @@
 #define PIN_LCD_D7                       32
 #define PIN_BTN_SET                      34
 #define PIN_BTN_GO                       36
-  #define PIN_BTN_FINISH                   38 // not used at present
+  #define PIN_BTN_FINISH                   38 // not used at presents
   #define PIN_BTN_QUERY_SIGNAL_BOARD_STATE 40 // not used at present
 #define PIN_AUTODESTRUCT                 35
 #define PIN_SPACE_OP                     37  // if AUTOD and SPACE are both off, we are in Derby mode (middle position)
@@ -306,9 +306,31 @@ void radioInterrupt() {
 }
 
 void transmitState(uint8_t s) {
-  printf("Sending state to remote: %s\r\n", int2bin(s));
-  radio.startWrite(&s, sizeof(s));
+  printf("Sending state: %s\r\n", int2bin(s));
+
+  radio.startWrite(&s, sizeof(s), false /* multicast */); // 11/18/2016: added 3rd arg, new with rf24 v1.7
   radioFlushHack();
+  noInterrupts(); // per txStandBy API note
+  radio.txStandBy();
+  interrupts();
+}
+
+void radioFlushHack() {
+  // HACK: Two consecutive calls to stopListening force tx and rx buffers to flush.
+  //       This fixes the problem where the receiver was receiving packets several iterations old.
+  // Also note the author's comment in RF24::write(): 
+  delay(50);
+  radio.stopListening();
+  radio.startListening();
+  radio.stopListening();
+  /*
+    void RF24::stopListening(void)
+    {
+      ce(LOW);
+      flush_tx();
+      flush_rx();
+    }
+   */
 }
 
 void printBadStateChange(uint8_t oldstate, uint8_t newstate) {
@@ -367,7 +389,7 @@ void setState(uint8_t newstate) {
       lcd.clear();
       lcd.print("Launch Control:");
       lcd.setCursor(0,1);
-      lcd.print("!!!!!! GO !!!!!!");
+      lcd.print("!! GO !!");
       break;
 
     case STATE_FINISH:
@@ -381,7 +403,7 @@ void setState(uint8_t newstate) {
 
     default:
       // Unknown state
-      msg("!!!!! UNKNOWN STATE !!!!!");
+      msg("!! UNKNOWN STATE !!");
       lcd.clear();
       lcd.print("SYSTEM FAULT!");
       lcd.setCursor(0,1);
@@ -452,23 +474,5 @@ void heartbeat() {
 
     digitalWrite(13, ledState);
   }
-}
-
-void radioFlushHack() {
-  // HACK: Two consequetive calls to stopListening force tx and rx buffers to flush.
-  //       This fixes the problem where the receiver was receiving packets several iterations old.
-  // Also note the author's comment in RF24::write(): 
-  delay(50);
-  radio.stopListening();
-  radio.startListening();
-  radio.stopListening();
-  /*
-    void RF24::stopListening(void)
-    {
-      ce(LOW);
-      flush_tx();
-      flush_rx();
-    }
-   */
 }
 

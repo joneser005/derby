@@ -63,6 +63,7 @@ class Command(BaseCommand):
             else:
                 race.run_set.all().delete()
 
+
         log.info('Seeding race {}/{}'.format(race_id, race.name))
         rm = EventManager()
         rm.seedRace(race)
