@@ -141,13 +141,18 @@ class FastTrackResultReader(threading.Thread):
         log.info('Connecting to track at {}.'.format(self.SERIAL_DEVICE))
         with serial.Serial(port=self.SERIAL_DEVICE, baudrate=9600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=self.TIMEOUT) as ser:
             log.info("Connected to: " + ser.portstr)
+            
+            # HACK:For CHAMP
+            ser.write('rg\r'.encode('utf-8'))
+
             currentResult = []
 
             while not self.stopEvent.is_set():
                 for c in ser.read():
                     sys.stdout.write(c)
                     if '\r' == c: continue
-                    if c == '@':
+                    if c == '@':   # this is where the Champ differs - it has cmds to send to query switch settings, 
+                                   # but it does not appear to send a message on reset (need to confirm)
                         self.tracklog.info('Reset signal received.  Start the cars when ready.')
                         self.resetCallback()
                     elif c != '\n':
@@ -155,7 +160,7 @@ class FastTrackResultReader(threading.Thread):
                     else:
                         # == '\n'
                         rawResult = ''.join(currentResult)
-                        if "VERSION" in rawResult:
+                        if "VERSION" in rawResult or "eTekGadget SmartLine Timer" in rawResult:
                             # Note we aren't saving the version string in rawResult, and same for the '@' reset signal
                             self.tracklog.info('Track init signal received.  [{}]  Start the cars when ready.'.format(rawResult))
                             self.resetCallback()

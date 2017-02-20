@@ -12,26 +12,30 @@ class Command(BaseCommand):
     args = '{race_id} {# runs to complete}'
     help = 'Simulates a Race results.  This can be destructive!  Do NOT run this on production races!'
 
-    def handle(self, *args, **options):
-        print(Current.objects.first())
-        if len(args) >= 1:
-            race_id = args[0]
-        else:
-            print('simulate expected race_id, got: {}'.format(args))
-            print('\n\t!!!!! This command can be destructive !!!!!\n')
-            print(help)
-            print('Usage:')
-            print(self.args)
-            print('Available races:')
-            for race in Race.objects.all().order_by('derby_event__event_date', 'level'):
-                print('Race id/name: {}/{}'.format(race.pk, race.name))
-            return
+    def add_arguments(self, parser):
+        parser.add_argument('race_id', type=int)
+        parser.add_argument('runs_to_complete', type=int)
 
-        race = Race.objects.get(pk=race_id)
-        if len(args) > 1:
-            runs_to_complete = int(args[1])
-        else:
-            runs_to_complete = race.run_set.all().count()
+    def handle(self, *args, **options):
+        race_id = options['race_id']
+        print('race_id={}'.format(race_id))
+        race = None
+        try:
+            race = Race.objects.get(pk=race_id)
+        except Exception as ex:
+            print(ex)
+            print(self.help)
+            raise CommandError('Race not provided or does not exist')
+
+        runs_to_complete = options['runs_to_complete']
+        print('race={}'.format(race))
+    #         print('race.run_set()={}'.format(race.run_set()))
+        max = race.run_set.count()
+        if None == runs_to_complete or runs_to_complete <= 0 or runs_to_complete > max:
+            print(self.help)
+            raise CommandError('Bad run_ct specified.  Must be between 1 and {}'.format(max))
+
+        print('Current = {}'.format(Current.objects.first()))
 
         print('About to create {} simulated results for {}'.format(runs_to_complete, race))
         print('!!!! DO NOT run this on production data !!!!!')
