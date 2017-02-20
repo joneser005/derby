@@ -7,3 +7,5 @@ from-camera/**
 log/
 media/
 !derbysite/media/racers/default-image.png
+.directory
+derby.db

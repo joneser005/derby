@@ -38,7 +38,7 @@ class RacerAdminForm(forms.ModelForm):
 	fields = '__all__'
 
 class RacerAdmin(admin.ModelAdmin):
-    form = RacerAdminForm 
+    form = RacerAdminForm
     fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag_20']
     list_display = ['id', 'person', 'rank', 'name', 'image_tag_20']
     list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_20']
@@ -51,7 +51,7 @@ class RacerAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         log.debug('Entered save_model')
         log.debug('form.cleaned_data={}'.format(form.cleaned_data))
-#         obj.name = form.cleaned_data['name_ideas'] if obj.name == None else form.cleaned_data['name'] 
+#         obj.name = form.cleaned_data['name_ideas'] if obj.name == None else form.cleaned_data['name']
         obj.save()
 
 class RacerNameAdmin(admin.ModelAdmin):
@@ -69,11 +69,11 @@ class DerbyEventAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
 
 class RaceAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'derby_event', 'racer_group', 'level', 'lane_ct']
+    list_display = ['id', 'name', 'derby_event', 'racer_group', 'level', 'lane_ct', 'observer_url']
     readonly_fields = ('id',)
 
 class CurrentAdmin(admin.ModelAdmin):
-    list_display = ['race', 'run', 'stamp']
+    list_display = ['race', 'run', 'stamp', 'control_url']
     list_display_links = ['race', 'run', 'stamp']
     readonly_fields = ('id', 'stamp')
 
@@ -86,3 +86,5 @@ admin.site.register(models.RunPlace)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Current, CurrentAdmin)
 admin.site.register(models.RacerName, RacerNameAdmin)
+admin.site.site_header = 'Pinewood Derby Race Management'
+admin.site.site_title = 'Pinewood Derby Race Management'

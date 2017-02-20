@@ -10,6 +10,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
+    url(r'^admin_tools/', include('admin_tools.urls')),
     url(r'^runner/', include('runner.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
