@@ -5,9 +5,10 @@ import random
 from django.db import connections
 from django.db import transaction
 
-from models import DerbyEvent, Race, Racer, RacerName, Run, RunPlace, Group, Current
+from runner.models import DerbyEvent, Race, Racer, RacerName, Run, RunPlace, Group, Current
 
 log = logging.getLogger('runner')
+
 
 class RaceAdminException(Exception):
     def __init__(self, value):
@@ -16,12 +17,14 @@ class RaceAdminException(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 class ReseedRaceException(Exception):
     def __init__(self, value):
         self.value = value
 
     def __str__(self):
         return repr(self.value)
+
 
 class EventManager:
     ''' The guts of the race '''
@@ -41,21 +44,25 @@ class EventManager:
     def createRace(self, derby_event, name, lane_ct, level):
         ''' TODO/Later: Replace lane_ct with Track object, that has that, and TrackReader '''
         ''' IMPORTANT: use lane_ct = min(actual lane ct, racer ct) '''
-        log.debug('Enter createRace(derby_event:{0}, name:{1}, lane_ct:{2}, level:{3})'.format(derby_event, name, lane_ct, level))
+        log.debug(
+            'Enter createRace(derby_event:{0}, name:{1}, lane_ct:{2}, level:{3})'.format(derby_event, name, lane_ct,
+                                                                                         level))
         race, created = derby_event.race_set.get_or_create(name=name, lane_ct=lane_ct, level=level)
         if created:
             log.debug('Created Race, name={0}, id={1}'.format(name, race.id))
         else:
             log.debug('Updated Race, name={0}, id={1}'.format(name, race.id))
         race.save()
-        log.debug('Exit createRace(derby_event:{0}, name:{1}, lane_ct:{2}, level:{3})'.format(derby_event, name, lane_ct, level))
+        log.debug(
+            'Exit createRace(derby_event:{0}, name:{1}, lane_ct:{2}, level:{3})'.format(derby_event, name, lane_ct,
+                                                                                        level))
         return race
-    
+
     def getRunsCompleted(self, race):
         runs = Run.objects.filter(race=race).filter(run_completed=True)
         log.debug('Completed Run count = {0}'.format(runs.count()))
-#         for cr in runs:
-#             log.debug('Completed Run = {0}'.format(cr))
+        #         for cr in runs:
+        #             log.debug('Completed Run = {0}'.format(cr))
         return runs
 
     def getRunsNotCompleted(self, race):
@@ -79,24 +86,27 @@ class EventManager:
             will continue to use the same number of lanes defined for the race.
         '''
         racers = race.racer_group.racers  # alias
-        start_seq = 1 # for a given Race, each Run is numbered in sequence
+        start_seq = 1  # for a given Race, each Run is numbered in sequence
 
-        if 0 <  race.run_set.count():
+        if 0 < race.run_set.count():
             # REFACTOR: Move to new function, reseedRace
             runs = self.getRunsCompleted(race)
-            if runs != None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct - 1:
+            if runs is not None and runs.count() > 0 and runs.count() > race.run_set.count() - race.lane_ct - 1:
                 msg = 'Cannot reseed race {3} - we are too far into the race!  runs.count() = {0}, race.run_set.count() = {1}, race.lane_ct = {2}'.format(
                     runs.count(), race.run_set.count(), race.lane_ct, race)
-                log.warn(msg)
+                log.warning(msg)
                 raise RaceAdminException(msg)
 
             diff = racers.count() - race.run_set.count()
-            if (0 < diff):
-                log.info('Re-seeding existing race {}, runs completed/total: {}/{}, with new/total racers: {}/{}.....'.format(race, runs.count(), race.run_set.count(), diff, racers.count()))
+            if 0 < diff:
+                log.info(
+                    'Re-seeding existing race {}, runs completed/total: {}/{}, with new/total racers: {}/{}.....'.format(
+                        race, runs.count(), race.run_set.count(), diff, racers.count()))
                 print(';;;;; race.run_set.all()={0}'.format(race.run_set.all()))
-                existing_racers = RunPlace.objects.filter(run__race=race).values_list('racer_id').distinct() 
+                existing_racers = RunPlace.objects.filter(run__race=race).values_list('racer_id').distinct()
                 print('----- existing_racers={0}'.format(existing_racers))
-                new_racers = Racer.objects.filter(id__in=race.racer_group.racers.values_list('id')).exclude(id__in=existing_racers)
+                new_racers = Racer.objects.filter(id__in=race.racer_group.racers.values_list('id')).exclude(
+                    id__in=existing_racers)
                 print('new_racers={0}'.format(new_racers))
                 if diff != len(new_racers):
                     raise RaceAdminException('Expected {0} new Racers, found {1}!'.format(diff, len(new_racers)))
@@ -110,15 +120,17 @@ class EventManager:
                     chewed_racers = []
                     try:
                         with transaction.atomic():
-                            new_run = race.run_set.create(run_seq=race.run_set.count()+1)  # run_seq is one-based 
-                            for lane in range(1, race.lane_ct+1):
+                            new_run = race.run_set.create(run_seq=race.run_set.count() + 1)  # run_seq is one-based
+                            for lane in range(1, race.lane_ct + 1):
                                 found = False
                                 for orig_run in race.run_set.filter(run_completed=False):
-                                    if orig_run == new_run: continue
+                                    if orig_run == new_run:
+                                        continue
                                     if orig_run.run_seq in chewed_runs:
                                         print('new_racer={}, orig_run.run_seq {}'.format(new_racer, orig_run.run_seq))
                                         continue
-                                    orig_racer = Racer.objects.get(id=orig_run.runplace_set.filter(lane=lane).values('racer__id'))
+                                    orig_racer = Racer.objects.get(
+                                        id=orig_run.runplace_set.filter(lane=lane).values('racer__id'))
                                     if orig_racer.id in chewed_racers:
                                         print('new_racer={}, orig_racer.id {}'.format(new_racer, orig_racer.id))
                                         continue
@@ -129,7 +141,9 @@ class EventManager:
                                     orig_rp.save()
                                     new_run.runplace_set.create(run=new_run, racer=orig_racer, lane=lane)
                                     new_run.save()
-                                    log.info('Patched new Racer.id={0} in at run_seq={1}, lane={2}.  Moved orig Racer.id={3} to run_seq={4}, lane={5}.'.format(new_racer.id, orig_run.run_seq, lane, orig_racer.id, new_run.run_seq, lane))
+                                    log.info(
+                                        'Patched new Racer.id={0} in at run_seq={1}, lane={2}.  Moved orig Racer.id={3} to run_seq={4}, lane={5}.'.format(
+                                            new_racer.id, orig_run.run_seq, lane, orig_racer.id, new_run.run_seq, lane))
                                     chewed_racers.append(orig_racer.id)
                                     chewed_runs.append(orig_run.run_seq)
                                     break
@@ -139,11 +153,17 @@ class EventManager:
                     except RaceAdminException as ex:
                         log.error(ex)
                         runs_completed = race.run_set.filter(run_completed=True).count()
-                        log.error('Unable to patch in racer {}.  Race {} run completed/total={}/{} chewed_runs/_racers={}/{}'.format(new_racer, race, runs_completed, race.run_set.count(), len(chewed_racers), len(chewed_runs)))
+                        log.error(
+                            'Unable to patch in racer {}.  Race {} run completed/total={}/{} chewed_runs/_racers={}/{}'.format(
+                                new_racer, race, runs_completed, race.run_set.count(), len(chewed_racers),
+                                len(chewed_runs)))
                     except ValueError as ex:
                         log.error(ex)
                         runs_completed = race.run_set.filter(run_completed=True).count()
-                        log.error('(ValueError) Unable to patch in racer {}.  Race {} run completed/total={}/{} chewed_runs/_racers={}/{}'.format(new_racer, race, runs_completed, race.run_set.count(), len(chewed_racers), len(chewed_runs)))
+                        log.error(
+                            '(ValueError) Unable to patch in racer {}.  Race {} run completed/total={}/{} chewed_runs/_racers={}/{}'.format(
+                                new_racer, race, runs_completed, race.run_set.count(), len(chewed_racers),
+                                len(chewed_runs)))
 
                 log.info('Done reseeding existing race with {0} additional Racers.'.format(diff))
             else:
@@ -159,51 +179,56 @@ class EventManager:
             random.seed()
 
             if racers.count() < race.lane_ct:
-                log.warn('Racer count ({0}) less than Race lane_ct ({1}).  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(racers.count(), race.lane_ct))
+                log.warning(
+                    'Racer count ({0}) less than Race lane_ct ({1}).  Reduced lane_ct to match Racer count.  Adding Racers will not change the number of lanes in use.'.format(
+                        racers.count(), race.lane_ct))
                 race.lane_ct = racers.count()
                 race.save()
 
             offsets = random.sample(range(0, racers.count()), race.lane_ct)
-# TODO/SOMEDAY: These are examples of offsets that don't work with the current algo - we run out of runs/racers to swap when racer/lane counts start at 10/6 in testSwapRacers_started
-# YES, this: This isn't a bug as much as just a deficiency in the reseeder.  Maybe if we tried starting from a different lane, then retried the op, repeat a few times, could minimize the problem.
-# Or maybe we just ignore this, as it will only come up if we attempt to reseed when close to the end.
-#             offsets = [0,4,6,5,8,3]
-#            offsets = [7,2,5,4,6,1]
-#             offsets = [8,7,1,6,4,3]
-#             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
+            # TODO/SOMEDAY: These are examples of offsets that don't work with the current algo - we run out of runs/racers to swap when racer/lane counts start at 10/6 in testSwapRacers_started
+            # YES, this: This isn't a bug as much as just a deficiency in the reseeder.  Maybe if we tried starting from a different lane, then retried the op, repeat a few times, could minimize the problem.
+            # Or maybe we just ignore this, as it will only come up if we attempt to reseed when close to the end.
+            #             offsets = [0,4,6,5,8,3]
+            #            offsets = [7,2,5,4,6,1]
+            #             offsets = [8,7,1,6,4,3]
+            #             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
 
             racers_array = racers.all()[:]
-            lane_tumbler = range(0, race.lane_ct) # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
-            for lane in range(1, race.lane_ct+1):
+            lane_tumbler = [x for x in range(0,
+                                 race.lane_ct)]  # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
+            for lane in range(1, race.lane_ct + 1):
                 if lane > len(racers_array):
                     # An adjustment to the lane_ct, above, so this should be dead code.
-                    log.info('Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(lane, race.lane_ct))
-                    break 
-#                 log.debug('Creating Lane Tumbler #{0}'.format(lane))
+                    log.info(
+                        'Skipping remaining lanes ({0}-{1}) - no more racers.  FYI Future reseeding runs may fail.'.format(
+                            lane, race.lane_ct))
+                    break
+                # log.debug('Creating Lane Tumbler #{0}'.format(lane))
                 tumbler = []  # holds every Racer, starting with racers_array[offsets[lane-1]]
-                for seq in range(start_seq, racers.count()+1):  # seq is one-based 
-                    racerIndex = seq -1 + offsets[lane-1] # subtract one b/c seq is one-based
+                for seq in range(start_seq, racers.count() + 1):  # seq is one-based
+                    racerIndex = seq - 1 + offsets[lane - 1]  # subtract one b/c seq is one-based
                     while racerIndex >= racers.count():
-                        racerIndex -= racers.count();
-#                     log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
+                        racerIndex -= racers.count()
+                    # log.debug('    lane={1}, seq={2}, racerIndex={0}'.format(racerIndex, lane, seq))
                     tumbler.append(racers_array[racerIndex])
-#                 log.debug('lane={0}'.format(lane))
-                lane_tumbler[lane-1] = tumbler
+                # log.debug('lane={0}'.format(lane))
+                lane_tumbler[lane - 1] = tumbler
 
             # Create the Run and RunPlace records based on above
             lane = race.lane_ct
             log.info('Creating Run and RunPlace records.....')
             lane_header = '  Lane #'
-            lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane+1))
+            lane_header += ''.join('{:>5}'.format(x) for x in range(1, lane + 1))
             log.info(lane_header)
-            lane_header = '-----'.join(' '.format(y) for y in range(lane+1))
+            lane_header = '-----'.join(' '.format(y) for y in range(lane + 1))
             log.info('        ' + lane_header)
-            for seq in range(1, racers.count()+1):
+            for seq in range(1, racers.count() + 1):
                 run = race.run_set.create(run_seq=seq)
                 seedTableRow = 'Run #{0}: '.format(seq)
-                for lane in range(1, race.lane_ct+1):
-                    run.runplace_set.create(run=run, racer=lane_tumbler[lane-1][seq-1], lane=lane)
-                    seedTableRow += '{:>5}'.format(lane_tumbler[lane-1][seq-1].pk)
+                for lane in range(1, race.lane_ct + 1):
+                    run.runplace_set.create(run=run, racer=lane_tumbler[lane - 1][seq - 1], lane=lane)
+                    seedTableRow += '{:>5}'.format(lane_tumbler[lane - 1][seq - 1].pk)
                 log.debug(seedTableRow)
 
             log.info('Done seeding new race.')
@@ -211,24 +236,26 @@ class EventManager:
     def swapRacers(self, race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane):
         ''' Swaps a pair of RunSequence => Racer assignments '''
         log.debug('ENTER swapRacers')
-        log.debug('Args: race_id=[{}], run_seq_1=[{}], racer_id_1=[{}], run_seq_2=[{}], racer_id_2=[{}], lane=[{}]'.format(race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane))
+        log.debug(
+            'Args: race_id=[{}], run_seq_1=[{}], racer_id_1=[{}], run_seq_2=[{}], racer_id_2=[{}], lane=[{}]'.format(
+                race_id, run_seq_1, racer_id_1, run_seq_2, racer_id_2, lane))
         run1 = Run.objects.get(race_id=race_id, run_seq=run_seq_1)
         rp1 = run1.runplace_set.get(lane=lane)
         run2 = Run.objects.get(race_id=race_id, run_seq=run_seq_2)
         rp2 = run2.runplace_set.get(lane=lane)
-        assert(rp2.seconds == None), "rp2.seconds is not None!"
+        assert (rp2.seconds is None), "rp2.seconds is not None!"
         # Not checking rp1, in case we have a situation where we are re-running a race, which is entirely possible if we have to swap racers on the fly (e.g. fell off the track)
-        assert(rp1.racer != rp2.racer), "Cannot swap the same Racer!"
- 
+        assert (rp1.racer != rp2.racer), "Cannot swap the same Racer!"
+
         with transaction.atomic():
             tempRacer = rp1.racer
-     
+
             rp1.racer = rp2.racer
             rp1.seconds = None
             rp1.dnf = 0
             rp1.stamp = datetime.datetime.now()
             rp1.save()
-     
+
             rp2.racer = tempRacer
             rp2.seconds = None
             rp2.dnf = 0
@@ -291,7 +318,7 @@ where run.race_id = c.race_id
   and {2} not in (select rp3.racer_id
                 from runner_runplace rp3
                 where rp3.run_id = rp.run_id) '''.format(lane, run_seq, swapee_racer_id)
-#         print(sql)
+        #         print(sql)
         cur.execute(sql)
         return cur
 
@@ -305,11 +332,12 @@ where run.race_id = c.race_id
         . . .
         ]
         '''
-        log.debug('ENTER getSwapCandidatesList(run_seq={}, lane={}, swapee_racer_id={})'.format(run_seq, lane, swapee_racer_id))
+        log.debug('ENTER getSwapCandidatesList(run_seq={}, lane={}, swapee_racer_id={})'.format(run_seq, lane,
+                                                                                                swapee_racer_id))
         cur = self.getSwapCandidatesCursor(run_seq, lane, swapee_racer_id)
-#         print('cur={}'.format(cur))
+        #         print('cur={}'.format(cur))
         desc = cur.description
-#         print('cur.description={}'.format(cur.description))
+        #         print('cur.description={}'.format(cur.description))
         result = [
             dict(zip([col[0] for col in desc], row))
             for row in cur.fetchall()
@@ -347,24 +375,27 @@ where run.race_id = c.race_id
            }]
     }
         '''
-        result = { 'now': datetime.datetime.now(),
-                   'race_id': race.id,
-                   'lane_ct': race.lane_ct,
-                   'runs': [] }
+        result = {'now': datetime.datetime.now(),
+                  'race_id': race.id,
+                  'lane_ct': race.lane_ct,
+                  'runs': []}
         for run in race.run_set.all():
             runplacesArray = []
             for rp in run.runplace_set.all():
-#                 log.debug('rp.racer.picture={}'.format(rp.racer.picture))
-                runplacesArray.append(dict(zip(['runplace_id','lane','racer_id','racer_name','racer_img', 'seconds','dnf','stamp','person_name'],
-                                               [rp.id, rp.lane,  rp.racer_id, rp.racer.name, rp.racer.picture, rp.seconds, rp.dnf, rp.stamp,rp.racer.person.name_first+' '+rp.racer.person.name_last])))
+                #                 log.debug('rp.racer.picture={}'.format(rp.racer.picture))
+                runplacesArray.append(dict(zip(
+                    ['runplace_id', 'lane', 'racer_id', 'racer_name', 'racer_img', 'seconds', 'dnf', 'stamp',
+                     'person_name'],
+                    [rp.id, rp.lane, rp.racer_id, rp.racer.name, rp.racer.picture, rp.seconds, rp.dnf, rp.stamp,
+                     rp.racer.person.name_first + ' ' + rp.racer.person.name_last])))
 
-            run_record = dict(zip(['run_id', 'run_seq', 'run_completed', 'run_stamp', 'runplaces'], 
+            run_record = dict(zip(['run_id', 'run_seq', 'run_completed', 'run_stamp', 'runplaces'],
                                   [run.id, run.run_seq, run.run_completed, run.stamp, runplacesArray]))
-            result['runs'].append(run_record);
+            result['runs'].append(run_record)
 
         # Add current race stats if this race is the Current:
         current = Current.objects.all()[0]
-        if None != current and current.race.id == race.id:
+        if current is not None and current.race.id == race.id:
             result['current_run_id'] = current.run.id
             result['current_run_seq'] = current.run.run_seq
             result['current_stamp'] = current.stamp
@@ -380,7 +411,7 @@ where run.race_id = c.race_id
         curr_seq = 1
         run_count = race.run_set.count()
         runs = race.run_set.filter(run_completed__exact=False).order_by('run_seq')
-        if (runs.count() > 0):
+        if runs.count() > 0:
             curr_seq = runs[0].run_seq
         else:
             curr_seq = 0
@@ -398,10 +429,10 @@ where run.race_id = c.race_id
         print('Starting race {0}'.format(race.name))
         for run in race.run_set.all().order_by('run_seq'):
             keepResult = False
-            while (False == keepResult):
+            while False == keepResult:
                 run, keepResult = resultReader(run)
-#             self.printRunResult(run)
-#         self.getRaceResults(race)
+                #             self.printRunResult(run)
+                #         self.getRaceResults(race)
 
     def formatRunResult(self, run):
         print(run)
@@ -414,40 +445,41 @@ where run.race_id = c.race_id
         for racer in Racer.objects.exclude(name__isnull=True).exclude(name__exact=''):
             name_ind += 1
             racer.name = name_pool[name_ind].name
-            racer.save() 
-            print ('Assigned name "{0}" to Racer #{1}'.format(racer.name, racer.id))
+            racer.save()
+            print('Assigned name "{0}" to Racer #{1}'.format(racer.name, racer.id))
         log.debug('Named {} racers.'.format(name_ind))
 
+
 def main():
-#     import os
-#     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
-#     print 'Number of arguments:', len(sys.argv), 'arguments.'
-#     print 'Argument List:', str(sys.argv)
+    #     import os
+    #     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
+    #     print 'Number of arguments:', len(sys.argv), 'arguments.'
+    #     print 'Argument List:', str(sys.argv)
 
 
-    import tests
     em = EventManager()
     race = Race.objects.get(name='TEST - General heats race')
     race.racer_group = race.racer_group
     print('Race: {}'.format(race))
     print('Racers in race group:')
     for r in race.racer_group.racers.all():
-        print r
+        print(r)
         print('#{} {}'.format(r.id, r.name))
     em.seedRace(race)
     em.getRaceStatusDict(race)
-#     em.runRace(race, tests.resultReaderRandomDnf)
+    #     em.runRace(race, tests.resultReaderRandomDnf)
 
-#     log.debug('Creating and seeding event....') #test code
-#     rm = EventManager() #test code
-#     derby_event = rm.createDerbyEvent('Test Event 1', '2013-02-01') #test code
-#     race_heat = rm.createRace(derby_event, 'Level 1 Heats', 6, 1) #test code
-#     rg = Group.objects.get(pk=2) #test code
-#     rm.seedRace(race_heat, rg) #test code
-#     log.debug('Done seeding.')
-#     log.debug('Running a mock race...')
-#     rm.runRace(race_heat)
+    #     log.debug('Creating and seeding event....') #test code
+    #     rm = EventManager() #test code
+    #     derby_event = rm.createDerbyEvent('Test Event 1', '2013-02-01') #test code
+    #     race_heat = rm.createRace(derby_event, 'Level 1 Heats', 6, 1) #test code
+    #     rg = Group.objects.get(pk=2) #test code
+    #     rm.seedRace(race_heat, rg) #test code
+    #     log.debug('Done seeding.')
+    #     log.debug('Running a mock race...')
+    #     rm.runRace(race_heat)
     log.debug('Done racing.')
+
 
 if __name__ == '__main__':
     main()

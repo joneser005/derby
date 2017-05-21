@@ -3,10 +3,12 @@ import logging
 from django.utils.html import format_html
 from django.db import models
 
-from singleton_model import SingletonModel
-from django.template.defaultfilters import default
+import runner.singleton_model
+
+# from django.template.defaultfilters import default
 
 log = logging.getLogger('runner')
+
 
 class DerbyEvent(models.Model):
     ''' e.g. Pinewood Derby '''
@@ -14,66 +16,67 @@ class DerbyEvent(models.Model):
     event_date = models.DateField('date of event', unique=True)
     stamp = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.event_name
+
 
 class Person(models.Model):
     ''' Seed values from Packmaster, also provide CRUD screen '''
     name_last = models.CharField(max_length=50)
     name_first = models.CharField(max_length=50)
-    rank = models.CharField(max_length=10, choices=[('Tiger','Tiger'),
-                                                    ('Wolf','Wolf'),
-                                                    ('Bear','Bear'),
-                                                    ('WEBELOS I','WEBELOS I'),
+    rank = models.CharField(max_length=10, choices=[('Tiger', 'Tiger'),
+                                                    ('Wolf', 'Wolf'),
+                                                    ('Bear', 'Bear'),
+                                                    ('WEBELOS I', 'WEBELOS I'),
                                                     ('WEBELOS II', 'WEBELOS II'),
                                                     ('None', 'n/a')])
     pack = models.CharField(max_length=5, default='4180')
     picture = models.ImageField(upload_to='people', blank=True, null=True, editable=False)
     stamp = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name_first + ' ' + self.name_last
 
     class Meta:
         ordering = ["name_last", "name_first"]
 
+
 class RacerName(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
+
 
 class Racer(models.Model):
     ''' e.g. Car or Rocket '''
     person = models.ForeignKey(Person)
-    name = models.CharField(max_length=200, unique=True,blank=True, null=True)     # e.g. "Red Rider"
-    name_choice = models.ForeignKey(RacerName,blank=True, null=True, verbose_name="name suggestions or specify below") # HACK: Used to display a small random set of suggested racer names
+    name = models.CharField(max_length=200, unique=True, blank=True, null=True)  # e.g. "Red Rider"
+    name_choice = models.ForeignKey(RacerName, blank=True, null=True,
+                                    verbose_name="name suggestions or specify below")  # HACK: Used to display a small random set of suggested racer names
     picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)
 
     def image_tag_100(self):
-        return format_html('<img src="{0}" alt="{1}"/>'.format('x','y'))
+        return format_html('<img src="{0}" alt="{1}"/>'.format('x', 'y'))
 
     def image_tag_20(self):
-        if self.picture == None:
+        if self.picture is None:
             img = ''
         else:
             img = self.picture
-        return '<img src="{0}" height="200px" alt="{1}"/>'.format(img.url ,img.url)
-
-    def __unicode__(self):
-        return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
-            ' (' + self.person.name_first + ' ' + self.person.name_last + ' : ' + self.person.rank + ')'
+        return '<img src="{0}" height="200px" alt="{1}"/>'.format(img.url, img.url)
 
     def __str__(self):
-        return '#' + str(self.id) + ' - ' + ('* no name given *' if None == self.name else self.name) + \
-            ' (' + self.person.name_first + ' ' + self.person.name_last + ')'
+        return '#' + str(self.id) + ' - ' + ('* no name given *' if self.name is None else self.name) + \
+               ' (' + self.person.name_first + ' ' + self.person.name_last + ' : ' + self.person.rank + ')'
 
     class Meta:
         ordering = ["pk"]
 
     image_tag_100.allow_tags = True
     image_tag_20.allow_tags = True
+
 
 class Group(models.Model):
     ''' e.g. Scouts or Open Division or Finals '''
@@ -84,8 +87,9 @@ class Group(models.Model):
     def count(self):
         return self.racers.count()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
+
 
 class Race(models.Model):
     '''e.g. Pack Race or Open Division Race'''
@@ -94,11 +98,11 @@ class Race(models.Model):
     name = models.CharField(max_length=200)
     lane_ct = models.PositiveIntegerField()
     stamp = models.DateTimeField(auto_now=True)
-    level = models.PositiveIntegerField(choices=[(1,'Heats'), (2,'Finals'), (3,'Open Division'), (4, 'Practice')])
+    level = models.PositiveIntegerField(choices=[(1, 'Heats'), (2, 'Finals'), (3, 'Open Division'), (4, 'Practice')])
 
     def runs(self):
         for run in self.run_set.all().order_by('run_seq'):
-            #log.debug('race {0} yielding run_seq={1}'.format(self.name, run.run_seq))
+            # log.debug('race {0} yielding run_seq={1}'.format(self.name, run.run_seq))
             yield run
 
     def observer_url(self):
@@ -106,25 +110,28 @@ class Race(models.Model):
 
     observer_url.short_description = 'Race Link'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
+
 
 class Run(models.Model):
     ''' One derby instance/heat '''
     race = models.ForeignKey(Race)
     run_seq = models.PositiveIntegerField()
     run_completed = models.BooleanField(default=False, null=False)
-    stamp = models.DateTimeField(default=datetime.datetime.now) #auto_now=True) using stamp from track data
+    stamp = models.DateTimeField(default=datetime.datetime.now)  # auto_now=True) using stamp from track data
 
     def run_places(self):
         for rp in self.runplace_set.all():
             yield rp
 
-    def __unicode__(self):
-        return 'Race:{0}(^{1})  Run #{2}  {3}'.format(self.race, self.race.level, self.run_seq,'(complete)' if self.run_completed else '')
+    def __str__(self):
+        return 'Race:{0}(^{1})  Run #{2}  {3}'.format(self.race, self.race.level, self.run_seq,
+                                                      '(complete)' if self.run_completed else '')
 
     class Meta:
         ordering = ['pk', 'run_seq']
+
 
 class RunPlace(models.Model):
     ''' time, place in heat '''
@@ -133,7 +140,7 @@ class RunPlace(models.Model):
     lane = models.PositiveIntegerField(editable=False)
     seconds = models.FloatField(blank=True, null=True)
     dnf = models.BooleanField(default=False)
-    stamp = models.DateTimeField(default=datetime.datetime.now) #auto_now=True) using stamp from track data
+    stamp = models.DateTimeField(default=datetime.datetime.now)  # auto_now=True) using stamp from track data
 
     def place(self):
         ''' returns 1-lane_ct '''
@@ -147,25 +154,27 @@ class RunPlace(models.Model):
                     continue  # Skip self
                 if rp.dnf:
                     log.debug('{} rp is DNF'.format(self.lane))
-                    continue    # We trump DNFs, so don't increment the place counter, n.
+                    continue  # We trump DNFs, so don't increment the place counter, n.
                 if rp.seconds < self.seconds:
                     n += 1
                     log.debug('n is {}'.format(n))
-                # else self was equal/faster than rp (not marking ties as such for now)
+                    # else self was equal/faster than rp (not marking ties as such for now)
         return n
 
     class Meta:
         ordering = ['run__race__id', 'run__run_seq', 'lane']
 
-    def __unicode__(self):
-        return '{0}  lane #{1},  Racer: {2}  Time: {3}'.format(self.run, self.lane, self.racer, ' (DNF)' if self.dnf else self.seconds)
+    def __str__(self):
+        return '{0}  lane #{1},  Racer: {2}  Time: {3}'.format(self.run, self.lane, self.racer,
+                                                               ' (DNF)' if self.dnf else self.seconds)
 
-class Current(SingletonModel):
+
+class Current(runner.singleton_model.SingletonModel):
     race = models.ForeignKey(Race)
     run = models.ForeignKey(Run)
     stamp = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Current: {} - {}, current run={}'.format(self.race.derby_event, self.race, self.run)
 
     def control_url(self):

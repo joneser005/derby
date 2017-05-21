@@ -1,7 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
 import logging
-import pprint
-import json
 
 from runner.models import Race, Racer, Group
 from runner.reports import Reports
@@ -10,9 +8,9 @@ from argparse import Action
 
 log = logging.getLogger('runner')
 
-class Command(BaseCommand):
 
-# TODO: Reconcile this help texts scattered around in this code
+class Command(BaseCommand):
+    # TODO: Reconcile this help texts scattered around in this code
 
     help = """manage.py print {action} {args...}
 {action}
@@ -27,8 +25,9 @@ class Command(BaseCommand):
     laneresults - print Run results by Lane
                     ex: python manage.py print laneresults {race_id}
 """
-#     standings - print Race standings
-#                     ex: python manage.py print standings {race_id}
+
+    #     standings - print Race standings
+    #                     ex: python manage.py print standings {race_id}
 
     def _usage(self, *args):
         print(self.help)
@@ -44,7 +43,16 @@ class Command(BaseCommand):
             racer = Racer.objects.get(pk=racer_id)
         else:
             racer = None
- 
+
+
+
+        # HACK: Troublehsooting Racer.objects...
+        log.warning(f'racer={racer},racer_id={racer_id}')
+
+
+
+
+
         r.printPrettyRaceStats(race, racer, summaryOnly=summary)
 
     def add_arguments(self, parser):
@@ -58,7 +66,7 @@ class Command(BaseCommand):
                      'laneresults',
                      'laneassignments',
                      'standings'],
-            default = 'help',
+            default='help',
             help=self.help,
         )
 
@@ -91,8 +99,8 @@ class Command(BaseCommand):
 
         elif 'standings' == action:
             raise CommandError('Not implemented')
-#             r = Reports()
-#             r.printStandings(race)  # TODO: Implement me!
+        #             r = Reports()
+        #             r.printStandings(race)  # TODO: Implement me!
 
         elif 'runmatrix' == action:
             if not race:

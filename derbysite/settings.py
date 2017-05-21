@@ -1,6 +1,7 @@
 # Django settings for derbysite project.
 import os
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
+
+CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
 
@@ -14,13 +15,13 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': os.path.join(CURRENT_PATH, '../derby.db'), # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': os.path.join(CURRENT_PATH, '../derby.db'),  # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
-        'USER': '', #robb
-        'PASSWORD': '', #alb....r
-        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '',                      # Set to empty string for default.
+        'USER': '',  # robb
+        'PASSWORD': '',  # alb....r
+        'HOST': '',  # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'PORT': '',  # Set to empty string for default.
     }
 }
 
@@ -69,7 +70,7 @@ MEDIA_URL = '/media/'
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
 STATIC_ROOT = os.path.join(CURRENT_PATH, '../hosted-static/')
-#print 'STATIC_ROOT={}'.format(STATIC_ROOT)
+# print 'STATIC_ROOT={}'.format(STATIC_ROOT)
 
 # URL prefix for static files.
 # Example: "http://example.com/static/", "http://static.example.com/"
@@ -88,7 +89,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # Make this unique, and don't share it with anybody.
@@ -124,7 +125,7 @@ TEMPLATES = [
 ]
 
 MIDDLEWARE = (
-#MIDDLEWARE_CLASSES = (
+    # MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -156,9 +157,11 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 INSTALLED_APPS = (
     'admin_tools',
-#    'admin_tools.theming',
-#    'admin_tools.menu',
-#    'admin_tools.dashboard',
+
+    # FIXME: Determine if there is any reason these three entries should stay - 5/2017:
+    # 'admin_tools.theming',
+    # 'admin_tools.menu',
+    # 'admin_tools.dashboard',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -180,13 +183,13 @@ LOGGING = {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-       'medium': {
+        'medium': {
             'format': '%(asctime)s %(levelname)s %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
         },
-       'bare': {
+        'bare': {
             'format': '%(asctime)s %(message)s'
         },
     },
@@ -206,36 +209,36 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/debug.log',
-            'maxBytes': '1000000',
+            'maxBytes': 1000000,
             'formatter': 'verbose'
         },
         'adminfile': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/admin.log',
-            'maxBytes': '1000000',
+            'maxBytes': 1000000,
             'formatter': 'verbose'
         },
         'track_raw_data_file': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/track_raw_data.log',
-            'maxBytes': '1000000',
+            'maxBytes': 1000000,
             'formatter': 'bare'
         },
         'sqlfile': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/sql.log',
-            'maxBytes': '1000000',
+            'maxBytes': 1000000,
             'formatter': 'verbose'
         },
         'tornadofile': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/tornado.log',
-            'maxBytes': '1000000',
+            'maxBytes': 1000000,
             'formatter': 'verbose'
-        },    },
+        }, },
     'loggers': {
         'runner': {
             'handlers': ['console',
@@ -255,8 +258,8 @@ LOGGING = {
             'level': 'DEBUG'
         },
         'tornado': {
-            'handlers': [#'console',
-                         'tornadofile'],
+            'handlers': [  # 'console',
+                'tornadofile'],
             'level': 'DEBUG',
             'propagate': True
         },
@@ -270,4 +273,5 @@ LOGGING = {
 }
 
 import django
+
 django.setup()
