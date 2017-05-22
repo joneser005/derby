@@ -54,7 +54,7 @@ class Command(BaseCommand):
             finished_ct = Run.objects.filter(race=race).filter(run_completed=True).count()
             if 0 < finished_ct:
                 print('Race {} has {} completed runs'.format(race, finished_ct))
-                if 'confirm' == raw_input(
+                if 'confirm' == input(
                         'Type \'confirm\' to destroy the results for this race and re-seed it, or anything else to exit: '):
                     unfinished_ct = Run.objects.filter(race=race).filter(run_completed=False).count()
                     log.info('Deleting all {} Runs for race, {}'.format(unfinished_ct, race))

@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
         print('About to create {} simulated results for {}'.format(runs_to_complete, race))
         print('!!!! DO NOT run this on production data !!!!!')
-        if 'confirm' == raw_input('Type \'confirm\' to proceed or anything else to exit: '):
+        if 'confirm' == input('Type \'confirm\' to proceed or anything else to exit: '):
             log.warning('Simulating race {} with random data.'.format(race))
             self.completeRuns(race, runs_to_complete)
         else:
