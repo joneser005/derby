@@ -3,8 +3,8 @@ import datetime
 import logging
 import random
 from runner.models import Race, Run, RunPlace, Group, Current
-from runner.engine import EventManager
-from runner.reports import Reports
+# from runner.engine import EventManager
+# from runner.reports import Reports
 
 log = logging.getLogger('runner')
 
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         print('About to create {} simulated results for {}'.format(runs_to_complete, race))
         print('!!!! DO NOT run this on production data !!!!!')
         if 'confirm' == raw_input('Type \'confirm\' to proceed or anything else to exit: '):
-            log.warn('Simulating race {} with random data.'.format(race))
+            log.warning('Simulating race {} with random data.'.format(race))
             self.completeRuns(race, runs_to_complete)
         else:
             print('Simulate cancelled.')

@@ -4,6 +4,7 @@ log = logging.getLogger('runner')
 
 _GOODBYE_MESSAGE = u'Goodbye'
 
+
 def web_socket_do_extra_handshake(request):
     # This example handler accepts any request. See origin_check_wsh.py for how
     # to reject access from untrusted scripts based on origin value.
@@ -27,5 +28,6 @@ def web_socket_transfer_data(request):
         else:
             request.ws_stream.send_message(line, binary=True)
 
+
 def web_socket_passive_closing_handshake(request):
-    print("Client closed ws connection.  Good dog!");
+    print("Client closed ws connection.  Good dog!")

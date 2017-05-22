@@ -8,12 +8,13 @@
 # http://localhost:8080/hello-django
 
 import os
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
 os.environ.setdefault("PYTHONPATH", ".")
 import logging
 import logging.config
 
-import django # Jan2014: Added for 1.7
+import django  # Jan2014: Added for 1.7
 
 from tornado.options import options, define, parse_command_line
 import django.core.handlers.wsgi
@@ -32,24 +33,30 @@ tornado.options.parse_command_line()
 
 clients = {}
 
+
 def ohash(x):
     return hash(x)
 
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    def data_received(self, chunk):
+        log.warning('Stub: data_received doing nothing.')
+        pass
+
     def open(self, *args):
         log.info('WebSocketHandler: open')
-        id = ohash(self) #self.get_argument("id")
+        id = ohash(self)  # self.get_argument("id")
         self.stream.set_nodelay(True)
         clients[id] = self
         log.info('WebSocketHandler: added new client, id:{}'.format(id))
 
-    def on_message(self, message):        
+    def on_message(self, message):
         log.info('Received message from client [%s]: [%s]' % (ohash(self), message))
-        if (message == 'Peekaboo!'):
+        if message == 'Peekaboo!':
             for key in clients:
                 socket = clients[key]
-#                 if socket == self:
-#                     continue
+                #                 if socket == self:
+                #                     continue
                 log.info('Sending msg to client id={}'.format(key))
                 socket.write_message('The chicken has fled the crib.')
 
@@ -62,26 +69,26 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
 def main():
     wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
-    CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8'))
+    CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 
     static_path = os.path.join(CURRENT_PATH, '../hosted-static/')
     print('static_path = {}'.format(static_path))
     favicon_path = static_path
 
     handlers = [
-                (r'/(favicon.ico)', tornado.web.StaticFileHandler, {'path': static_path}),
-                (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static_path}),
-                (r'/socket/refresh/', WebSocketHandler),
-                (r'.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
-	]
+        (r'/(favicon.ico)', tornado.web.StaticFileHandler, {'path': static_path}),
+        (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static_path}),
+        (r'/socket/refresh/', WebSocketHandler),
+        (r'.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
+    ]
 
     tornado_app = tornado.web.Application(handlers)
-    django.setup() # Jan2014: Added for 1.7
+    django.setup()  # Jan2014: Added for 1.7
     log.info("Tornado starting")
     server = tornado.httpserver.HTTPServer(tornado_app)
     server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()
 
+
 if __name__ == '__main__':
     main()
-    
