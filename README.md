@@ -12,24 +12,28 @@
 1. Option to cycle thru results, suitable for projection screens
 1. Integrates with electronic race track scoreboard.  Supports:
     * MicroWizard FastTrack http://www.microwizard.com/
-        (Supports their older protocol)
     * TODO: The Champ http://www.besttrack.com/champ_timer.htm
+
+### Pictures from past events
+[Pack 180 2016](https://www.flickr.com/photos/joneser005/albums/72157663329671880) <br>
+[Pack 180 2015](https://www.flickr.com/photos/joneser005/albums/72157649958604497)
 
 
 ### Pinewood Derby Event Checklist
--[ ] Reserve/obtain vdeo projectors for the event:
-  -[ ] Event display: show race info or standings
-    *FUTURE: Auto-toggle*
-  -[ ] (optional) Event display #2 so race into and standings can be shown together
-  -[ ] (optional) Live video feed
-    -[ ] Make sure video capture device is compatible with projector, have cables, etc.
--[ ] Order trophies from Fond Memories (at least 2 weeks out)
--[ ] Get participation ribbons or patches
--[ ] Get placement medals
--[ ] Print instructions for joining network, racer URL
--[ ] Pre-seed database (Event, Persons) to minimize race-day data entry
--[ ] Print car roster for manual scoring in case of fatal technical failure
--[ ] Send out Derby Rules + Race-specific info
+- [ ] Reserve/obtain A/V for the event:
+- [ ] Projector/tv: show race info & standings
+- [ ] (optional) Projector/tv #2 so race into and standings can be shown together
+- [ ] (optional) Projector/tv: Live video
+- [ ] (optional) Video camera + tripod for live video
+- [ ] Test video source devices with projectors/TVs
+- [ ] Order trophies from Fond Memories (at least 3 weeks out)
+- [ ] Get participation ribbons or patches
+- [ ] Get placement medals
+- [ ] Print instructions for joining network, racer URL
+- [ ] Pre-seed database (Event, Persons) to minimize race-day data entry
+- [ ] Print roster/manual scoring sheets in case of fatal technical failure
+- [ ] Send out Derby Rules + Race-specific info
+- [ ] Volunteer signup
 
 
 ### Notes
@@ -50,7 +54,6 @@
 
 ### TODO: Finish migrating legacy docs to markdown
 [Legacy documentation (Google Doc)](https://docs.google.com/document/d/1Ew5Sae5Ddh8D89lGPiHjHINBW-U9qNwmGKFyW2DjvC4/edit?usp=sharing)
-
 
 
 
