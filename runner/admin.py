@@ -15,7 +15,7 @@ class PersonAdmin(admin.ModelAdmin):
     list_display_links = ['id', 'name_first', 'name_last', 'rank', 'pack']
     list_filter = ('rank', 'pack',)
 
-    def rank(self, obj):  # TEMP: [2017-05-20] Added self arg
+    def rank(self, obj):
         return obj.rank
 
     def racer_id(self, obj):
@@ -29,7 +29,7 @@ class RacerAdminForm(forms.ModelForm):
         name = cleaned_data.get("name")
         choice = cleaned_data.get("name_choice")
 
-        if 0 == len(name):
+        if name is None or 0 == len(name):
             cleaned_data['name'] = choice
 
         # Always return the full collection of cleaned data.

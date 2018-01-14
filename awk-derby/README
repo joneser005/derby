@@ -1,0 +1,15 @@
+README
+-------
+derby/awk-derby
+
+Files in this directory are for a primitive, standalone awk-based derby
+runner program.  It parses results received on a USB-serial connection
+and displays the results on stdout.  This was run inside a maximized
+terminal session with a font size set so the results from a single run
+filled the screen.
+
+These files are historical in nature, and are not a working part of
+the python derby runner that followed it + hosts this github repo:
+https://github.com/joneser005/derby
+
+-end-
