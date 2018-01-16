@@ -37,6 +37,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['list']:
             self.print_all_races()
+            return
 
         if Current.objects.first():
             print(Current.objects.first())  # printing as a visual reminder.....
@@ -48,7 +49,9 @@ class Command(BaseCommand):
             race = Race.objects.get(pk=race_id)
         except:
             self.print_all_races()
-            raise CommandError('Race "%s" does not exist' % race_id)
+            if race_id is None:
+                return
+            raise CommandError('race_id "%s" does not exist' % race_id)
 
         if options['reset']:
             finished_ct = Run.objects.filter(race=race).filter(run_completed=True).count()

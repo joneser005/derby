@@ -26,26 +26,25 @@
 - [ ] (optional) Projector/tv: Live video
 - [ ] (optional) Video camera + tripod for live video
 - [ ] Test video source devices with projectors/TVs
-- [ ] Order trophies from Fond Memories (at least 3 weeks out)
-- [ ] Get participation ribbons or patches
-- [ ] Get placement medals
+- [ ] Order trophies (allow time.....)
+- [ ] Get participation ribbons or patches, placement medals`
 - [ ] Print instructions for joining network, racer URL
 - [ ] Pre-seed database (Event, Persons) to minimize race-day data entry
 - [ ] Print roster/manual scoring sheets in case of fatal technical failure
 - [ ] Send out Derby Rules + Race-specific info
-- [ ] Volunteer signup
+- [ ] Send out Volunteer signup
 
 
 ### Notes
 1. All cars will race once every lane
     *FUTURE: Add option to race more than once on each lane*
-1. Pack-level: Cars will race against random scouts, not by den/rank
+1. Pack-level: Cars will race against random scouts, not by den/rank.  Each car races at least once on each lane.
 1. District-level: Group ranks into separate races
 1. Winners determined by lowest average time for all runs
 1. Pack-level races will have four sets of races:
     1. Pack heats - all cub scouts race together
     1. Wildcard - 2nd place rank finishers play for one slot in the pack finals
-    1. Open division heats - anyone/everyone competes, $1 entry fee
+    1. Open division heats - anyone/everyone competes, meager entry fee to cover trophy costs
         * Cars racing in the Pack heats are not eligible
     1. Pack finals - top finisher from each rank + the wild card
 1. Also do practice runs, where we don’t care which car runs where, but will want to see+keep the results.
