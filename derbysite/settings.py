@@ -158,16 +158,13 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 INSTALLED_APPS = (
     'admin_tools',
 
-    # FIXME: Determine if there is any reason these three entries should stay - 5/2017:
-    # 'admin_tools.theming',
-    # 'admin_tools.menu',
-    # 'admin_tools.dashboard',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'flat_responsive',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.humanize',
