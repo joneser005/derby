@@ -3,14 +3,13 @@ import datetime
 import logging
 import random
 from runner.models import Race, Run, RunPlace, Group, Current
-# from runner.engine import EventManager
-# from runner.reports import Reports
 
 log = logging.getLogger('runner')
 
 class Command(BaseCommand):
     args = '{race_id} {# runs to complete}'
     help = 'Simulates a Race results.  This can be destructive!  Do NOT run this on production races!'
+	#FIXME: Set db Current record (maybe restore to previous value @end), as it is referenced in this process.
 
     def add_arguments(self, parser):
         parser.add_argument('race_id', type=int)
@@ -29,7 +28,6 @@ class Command(BaseCommand):
 
         runs_to_complete = options['runs_to_complete']
         print('race={}'.format(race))
-    #         print('race.run_set()={}'.format(race.run_set()))
         max = race.run_set.count()
         if None == runs_to_complete or runs_to_complete <= 0 or runs_to_complete > max:
             print(self.help)
@@ -46,9 +44,11 @@ class Command(BaseCommand):
             print('Simulate cancelled.')
 
     def completeRuns(self, race, runs_to_complete):
-        if 0 >= runs_to_complete: return
+        if 0 >= runs_to_complete:
+            return
         print('completeRuns: race: {0}, runs_to_complete={1}'.format(race, runs_to_complete))
         if 0 == Current.objects.all().count():
+#TODO/REFACTOR: Move Current handing code to above method, and include case where "requested race != Current race" in this block
             curr = Current()
             curr.race=race
             curr.run=race.run_set.get(run_seq=1)
