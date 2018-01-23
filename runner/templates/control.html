@@ -24,7 +24,7 @@
      runs:
          [{run_id:id,
            run_seq:seq,
-           run_completed:1|0, 
+           run_completed:1|0,
            runplaces:
               [{runplace_id:id, lane:no, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
                {runplace_id:id, lane:no, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
@@ -33,7 +33,7 @@
            }]
     }
  */
- 
+
 var ws_refresh = null;
 var TIMEOUT_SECS = 30;
 
@@ -333,7 +333,7 @@ function broadcastUpdate() {
 }
 
 function broadcastUpdateInit() {
-	var RACE_UPDATE_PORT = 80;
+	var RACE_UPDATE_PORT = location.port;
 	var url = 'ws://' + document.location.hostname + ':' + RACE_UPDATE_PORT + '/socket/refresh/';
 
 	console.log('broadcastUpdate: Connecting to ws-refresh at ', url, '...');
@@ -361,7 +361,7 @@ function broadcastUpdateInit() {
 
 function startup() {
 	console.log("ENTER startup()");
-	
+
 	updateStatus();
 
 	$('#scrollToCurrentRun').click(scrollToCurrentRun);
@@ -369,14 +369,14 @@ function startup() {
 	$('#refreshStatus').click(function() {
 		updateStatus();
 	});
-	
+
 	broadcastUpdateInit();
 
 	$('#broadcastRefresh').click(function() {
 		console.log(ws_refresh);
 		broadcastUpdate();
 	});
-	
+
 	$('#reverseLaneDisplay').click(function() {
 		console.log('START calling reverseLaneDisplay()');
 		reverseLaneDisplay();
