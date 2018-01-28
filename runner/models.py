@@ -50,9 +50,9 @@ class RacerName(models.Model):
 
 class Racer(models.Model):
     ''' e.g. Car or Rocket '''
-    person = models.ForeignKey(Person)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, unique=True, blank=True, null=True)  # e.g. "Red Rider"
-    name_choice = models.ForeignKey(RacerName, blank=True, null=True,
+    name_choice = models.ForeignKey(RacerName, blank=True, null=True, on_delete=models.SET_NULL,
                                     verbose_name="name suggestions or specify below")  # HACK: Used to display a small random set of suggested racer names
     picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)
@@ -93,8 +93,8 @@ class Group(models.Model):
 
 class Race(models.Model):
     '''e.g. Pack Race or Open Division Race'''
-    derby_event = models.ForeignKey(DerbyEvent)
-    racer_group = models.ForeignKey(Group, blank=True, null=True)
+    derby_event = models.ForeignKey(DerbyEvent, on_delete=models.CASCADE)
+    racer_group = models.ForeignKey(Group, blank=True, null=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=200)
     lane_ct = models.PositiveIntegerField()
     stamp = models.DateTimeField(auto_now=True)
@@ -116,7 +116,7 @@ class Race(models.Model):
 
 class Run(models.Model):
     ''' One derby instance/heat '''
-    race = models.ForeignKey(Race)
+    race = models.ForeignKey(Race, on_delete=models.CASCADE)
     run_seq = models.PositiveIntegerField()
     run_completed = models.BooleanField(default=False, null=False)
     stamp = models.DateTimeField(default=datetime.datetime.now)  # auto_now=True) using stamp from track data
@@ -135,8 +135,8 @@ class Run(models.Model):
 
 class RunPlace(models.Model):
     ''' time, place in heat '''
-    run = models.ForeignKey(Run)
-    racer = models.ForeignKey(Racer)
+    run = models.ForeignKey(Run, on_delete=models.CASCADE)
+    racer = models.ForeignKey(Racer, on_delete=models.CASCADE)
     lane = models.PositiveIntegerField(editable=False)
     seconds = models.FloatField(blank=True, null=True)
     dnf = models.BooleanField(default=False)
@@ -170,8 +170,8 @@ class RunPlace(models.Model):
 
 
 class Current(runner.singleton_model.SingletonModel):
-    race = models.ForeignKey(Race)
-    run = models.ForeignKey(Run)
+    race = models.ForeignKey(Race, on_delete=models.CASCADE)
+    run = models.ForeignKey(Run, on_delete=models.CASCADE)
     stamp = models.DateTimeField(auto_now=True)
 
     def __str__(self):
