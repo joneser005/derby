@@ -148,7 +148,6 @@ INSTALLED_APPS = [
 	'django.contrib.sites',
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
-	'flat_responsive',
 	'django.contrib.admin',
 	'django.contrib.admindocs',
 	'django.contrib.humanize',
