@@ -3,10 +3,11 @@ import fcntl
 import logging
 import os
 import random
-import serial
+import sys
 import threading
 import time
-import sys
+
+import serial
 
 log = logging.getLogger('runner')
 lanes = 6  # TODO/HACK/FIXME: This code assumes 6 lanes - you can't just change this value!!!!!
@@ -48,14 +49,13 @@ def resultsCBprint(result):
 
 
 class MockFastTrackResultReader(threading.Thread):
-    ''' Mock reader for 
-        Micro Wizard - Fast Track - Model P2 
+    ''' Mock reader for
+        Micro Wizard - Fast Track - Model P2
         Version string is [P2 VERSION 1.6 ]'''
     stopEvent = None
     resetCallback = None
     resultsCallback = None
     tracklog = None
-    log = None
 
     def __init__(self,
                  stopEvent,
@@ -101,7 +101,7 @@ class MockFastTrackResultReader(threading.Thread):
 
 
 class FastTrackResultReader(threading.Thread):
-    ''' Micro Wizard - Fast Track - Model P2 
+    ''' Micro Wizard - Fast Track - Model P2
         Version string is [P2 VERSION 1.6 ]'''
     SERIAL_DEVICE = '/dev/ttyUSB0'
     TIMEOUT = 1  # seconds, set small so we can check the stopEvent periodically
@@ -155,8 +155,11 @@ class FastTrackResultReader(threading.Thread):
 
             while not self.stopEvent.is_set():
                 for c in ser.read():
+                #for cc in ser.read():
+                #    c = cc.decode()
                     sys.stdout.write(c)
-                    if '\r' == c: continue
+                    if '\r' == c:
+                        continue
                     if c == '@':  # this is where the Champ differs - it has cmds to send to query switch settings,
                         # but it does not appear to send a message on reset (need to confirm)
                         self.tracklog.info('Reset signal received.  Start the cars when ready.')
@@ -179,7 +182,7 @@ class FastTrackResultReader(threading.Thread):
                         currentResult = []
 
                 # Heartbeat
-                if None != console_fd:
+                if console_fd is not None:
                     try:
                         fcntl.ioctl(console_fd, KDSETLED, self.INDICATOR_KEY - lastKeycode)
                         lastKeycode = self.INDICATOR_KEY - lastKeycode

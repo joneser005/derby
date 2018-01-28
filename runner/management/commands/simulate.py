@@ -9,7 +9,7 @@ log = logging.getLogger('runner')
 class Command(BaseCommand):
     args = '{race_id} {# runs to complete}'
     help = 'Simulates a Race results.  This can be destructive!  Do NOT run this on production races!'
-	#FIXME: Set db Current record (maybe restore to previous value @end), as it is referenced in this process.
+    #FIXME: Set db Current record (maybe restore to previous value @end), as it is referenced in this process.
 
     def add_arguments(self, parser):
         parser.add_argument('race_id', type=int)
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         runs_to_complete = options['runs_to_complete']
         print('race={}'.format(race))
         max = race.run_set.count()
-        if None == runs_to_complete or runs_to_complete <= 0 or runs_to_complete > max:
+        if runs_to_complete is None or runs_to_complete <= 0 or runs_to_complete > max:
             print(self.help)
             raise CommandError('Bad run_ct specified.  Must be between 1 and {}'.format(max))
 
@@ -50,9 +50,9 @@ class Command(BaseCommand):
         if 0 == Current.objects.all().count():
 #TODO/REFACTOR: Move Current handing code to above method, and include case where "requested race != Current race" in this block
             curr = Current()
-            curr.race=race
-            curr.run=race.run_set.get(run_seq=1)
-            curr.stamp=datetime.datetime.now()
+            curr.race = race
+            curr.run = race.run_set.get(run_seq=1)
+            curr.stamp = datetime.datetime.now()
             curr.save()
         else:
             curr = Current.objects.first()
@@ -70,8 +70,8 @@ class Command(BaseCommand):
                 rp.seconds = round(3 + random.random() * 3, 3)
                 rp.stamp = datetime.datetime.now()
                 rp.save()
-            curr.run.run_seq+=1  # seeding and swapping uses the Current record
+            curr.run.run_seq += 1  # seeding and swapping uses the Current record
             curr.save()
-            x-=1
-            if x<1:
+            x -= 1
+            if x < 1:
                 break

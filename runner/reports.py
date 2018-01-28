@@ -24,13 +24,15 @@ class Reports:
     def __init__(self):
         pass
 
-    def speed(self, t, dnf=None):
+    def get_speed(self, t, dnf=None):
         ''' HACK: Keep this in sync with the javascript implementation at static-files/js/myderby.js '''
-        if None == dnf: dnf = False
+        if dnf is None:
+            dnf = False
         if t is None or 0 == t or dnf:
             return "-"
         mph = math.trunc(((math.log((1 / max(1.1, (t - 1.0))) * 15) * 200) - 75))
-        if 0 >= mph: mph = "-"
+        if 0 >= mph:
+            mph = "-"
         return str(mph)
 
     def prerace(self, race):
@@ -75,7 +77,7 @@ class Reports:
         laneMatrix.append('          '.ljust(10 + 2 * len(racer_ids), '-'))
         outline = ''
         for run in race.runs():
-            run_completed_flag = 'c' if True == run.run_completed else ' '
+            run_completed_flag = 'c' if run.run_completed else ' '
             outline = 'Run #{0:>2}{1}> '.format(run.run_seq, run_completed_flag)
 
             for racer in race.racer_group.racers.all().order_by('id'):
@@ -208,7 +210,7 @@ class Reports:
                     place = '-'
                 else:
                     seconds = '{:.3f}'.format(rp.seconds)
-                    speed = self.speed(rp.seconds)
+                    speed = self.get_speed(rp.seconds)
                     place = laneResults['{0}:{1}'.format(racer.id, rp.lane)][4]
 
                 buffer.write(
@@ -243,7 +245,7 @@ order by rp.racer_id, rp.lane ''', [race.id])
     def getRaceStatsDict(self, race, racer=None):
         ''' Gets Race stats for a specific Racer or all Racers. '''
         result = {'race.{0}'.format(race.id): self.getRaceSummaryDict(race)}
-        if None == racer:
+        if racer is None:
             for r in race.racer_group.racers.all():
                 result['racer.{0}'.format(r.id)] = self.getRacerStatsDict(race, r)
         else:
@@ -302,9 +304,9 @@ where race.id = %s and rp.seconds > 0 ''', [race.id])
             result['slowest_time'] = row[0]
             result['fastest_time'] = row[1]
             result['avg_time'] = round(row[2], 3) if row[2] else None  # HACK: Hardcoded round digits
-            result['slowest_speed'] = self.speed(row[0])
-            result['fastest_speed'] = self.speed(row[1])
-            result['avg_speed'] = self.speed(row[2])
+            result['slowest_speed'] = self.get_speed(row[0])
+            result['fastest_speed'] = self.get_speed(row[1])
+            result['avg_speed'] = self.get_speed(row[2])
         return result
 
     def getRacerStatsDict(self, race, racer):
@@ -327,9 +329,9 @@ where race.id = %s and rp.seconds > 0
             result['slowest_time'] = row[0]
             result['fastest_time'] = row[1]
             result['avg_time'] = round(row[2], 3) if row[2] else None  # HACK: Hardcoded round digits
-            result['slowest_speed'] = self.speed(row[0])
-            result['fastest_speed'] = self.speed(row[1])
-            result['avg_speed'] = self.speed(row[2])
+            result['slowest_speed'] = self.get_speed(row[0])
+            result['fastest_speed'] = self.get_speed(row[1])
+            result['avg_speed'] = self.get_speed(row[2])
         return result
 
     def laneStats(self, race):
@@ -361,7 +363,7 @@ where race.id = %s and rp.seconds > 0
         print('          '.ljust(10 + 2 * len(racer_ids), '-'))
         outline = ''
         for run in race.runs():
-            run_completed_flag = 'c' if True == run.run_completed else ' '
+            run_completed_flag = 'c' if run.run_completed else ' '
             outline = 'Run #{0:>2}{1}> '.format(run.run_seq, run_completed_flag)
 
             for racer in race.racer_group.racers.all().order_by('id'):

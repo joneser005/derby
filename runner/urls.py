@@ -11,8 +11,7 @@ urlpatterns = [
     url(r'^race/(?P<race_id>(\d+|current))/status/datanocache/$', views.getStatusDataNoCache, name='status_data_nocache'),
     url(r'^race/(?P<race_id>(\d+|current))/standings/data/$', views.getStandingsData, name='standings_data'),
     url(r'^race/(?P<race_id>(\d+|current))/standings/datanocache/$', views.getStandingsDataNoCache, name='standings_data_nocache'),
-
-# Privileged
+# Privileged:
     url(r'^race/(?P<race_id>(\d+|current))/control/$', views.control, name='control'),
     url(r'^race/(?P<race_id>(\d+|current))/runresult/(?P<timeout_secs>(\d+))$', views.getRunResult, name='get_run_result'),
     url(r'^race/(?P<race_id>(\d+|current))/setrunresult/$', views.setRunResult, name='set_run_result'),

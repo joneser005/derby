@@ -10,8 +10,6 @@ log = logging.getLogger('runner')
 
 
 class Command(BaseCommand):
-    # TODO: Reconcile this help texts scattered around in this code
-
     help = """manage.py print {action} {args...}
 {action}
     help - print this message

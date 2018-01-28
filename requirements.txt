@@ -1,3 +1,4 @@
+serial
 appdirs==1.4.3
 Django==1.11.1
 django-admin-tools==0.8.0

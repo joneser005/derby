@@ -2,17 +2,16 @@ import datetime
 import json
 import logging
 import threading
-from django.views.decorators.csrf import ensure_csrf_cookie  # , csrf_exempt, csrf_protect
 
 from django.core.cache import cache
-from django.http import HttpResponse, Http404
-from django.template import Context, RequestContext
-from django.shortcuts import render_to_response, render, redirect
 from django.db.models.fields.files import ImageFieldFile
+from django.http import HttpResponse, Http404
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import ensure_csrf_cookie  # , csrf_exempt, csrf_protect
 
-from runner.models import Current, Race, Run, RunPlace, Group
-from runner.engine import EventManager
 import runner.readers as readers
+from runner.engine import EventManager
+from runner.models import Current, Race, Run, RunPlace
 
 log = logging.getLogger('runner')
 stopEvent = threading.Event()  # for track control
@@ -21,6 +20,7 @@ lastTrackResult = None
 
 def isControl(request):
     return request.user.is_authenticated() and request.user.is_superuser
+    # FIXME/DJANGO3: request.user.is_authenticated() becomes a property (remove parens)
 
 
 def isNotControl(request):
@@ -34,7 +34,7 @@ def _get_last_update():
     against people rapidly refreshing their browser. '''
     key = 'last_race_update'
     ttl = 5  # This needs to stay short
-    if None == cache.get(key):
+    if cache.get(key) is None:
         cache.set(key, Current.objects.first().stamp, ttl)
         log.debug('Set cache for key, {}, ttl={}'.format(key, ttl))
     else:
@@ -74,8 +74,9 @@ def overhead(request, race_id, view):
     race = getRace(race_id)
     context = {}
 
-    if None != race:
-        if race_id == "current": race_id = race.id
+    if race is not None:
+        if race_id == "current":
+            race_id = race.id
         complete_run_ct = race.run_set.filter(run_completed__exact=True).count()
         total_run_ct = race.run_set.all().count()
 
@@ -110,9 +111,11 @@ def control(request, race_id):
         return redirect('/runner/race/current/standings', race_id=race_id)
 
     race = getRace(race_id)
-    if race_id == "current": race_id = race.id
+    if race_id == "current":
+        race_id = race.id
 
-    if None != race:
+    context = {}
+    if race is not None:
         complete_run_ct = race.run_set.filter(run_completed__exact=True).count()
         total_run_ct = race.run_set.all().count()
         log.debug('complete_run_ct={}, total_run_ct={}'.format(complete_run_ct, float(total_run_ct)))
@@ -135,7 +138,7 @@ def control(request, race_id):
 
 def getRace(race_id):
     race = None
-    if (race_id == 'current'):
+    if race_id == 'current':
         current = Current.objects.first()
         if current is not None and current.race is not None:
             log.info('Retrieving Current Race')
@@ -173,7 +176,8 @@ def getData(request, race_id, name, nocache):
     If the Current table's stamp is NOT newer than the cache key's stamp and
     the cache is not expired, data is pulled from the cache, not the database. '''
     log.debug('Entering getData(request, race_id={}, name={})'.format(race_id, name))
-    if None == nocache:
+    result = None
+    if nocache is None:
         nocache = False
     CACHE_TIMEOUT_SECS = 30
     key_stamp = name + '_stamp'
@@ -181,9 +185,9 @@ def getData(request, race_id, name, nocache):
     useCachedData = False
     current_stamp = _get_last_update()
     data_stamp = cache.get(key_stamp)
-    if not nocache and None != data_stamp and data_stamp >= current_stamp:
+    if not nocache and data_stamp is not None and data_stamp >= current_stamp:
         result = cache.get(key_data)
-        if None == result:
+        if result is None:
             log.error('Cache code error: Found stamp key/value for {} but not data key/value for {}'.format(key_stamp,
                                                                                                             key_data))
             useCachedData = False
@@ -195,12 +199,14 @@ def getData(request, race_id, name, nocache):
         log.info('Retrieving {} JSON FROM DATABASE'.format(name))
         rm = EventManager()
         race = getRace(race_id)
-        if (race is not None):
+        if race is not None:
 
-            if ('standings' == name):
+            if 'standings' == name:
                 dr = rm.getRaceStandingsDict(race)
-            elif ('status' == name):
+            elif 'status' == name:
                 dr = rm.getRaceStatusDict(race)
+            else:
+                dr = {}
 
             try:
                 cache.set(key_stamp, current_stamp, CACHE_TIMEOUT_SECS)
@@ -299,11 +305,11 @@ def getRunResult(request, race_id, timeout_secs):
     log.info('getRunResult called by user {}'.format(request.user.username))
     if isNotControl(request):
         log.warning("Unauthorized attempt to get track results from host [{}], uid[{}].".format(request.get_host(),
-                                                                                             request.user.username))
+                                                                                                request.user.username))
         return HttpResponse('403: Failed')
 
     secs = int(timeout_secs)
-    if (None == secs or 0 >= secs or secs > 300):
+    if secs is None or 0 >= secs or secs > 300:
         msg = "Bad value for timeout_secs: [{}].".format(secs)
         log.warning(msg)
         return HttpResponse(msg)
@@ -387,7 +393,7 @@ def setRunResult(request, race_id):
             return HttpResponse(result)
         else:
             log.warning("Unauthorized attempt to POST track results from host [{}], uid[{}].".format(request.get_host(),
-                                                                                                  request.user.username))
+                                                                                                     request.user.username))
             return HttpResponse('403: Failed')
             # Object {0: "2013-12-29 19:15:32.998656:", 1: 2.483, 2: 2.295, 3: 2.115, 4: 1.946, 5: 1.761, 6: 1.608, run_seq: 12}
     else:

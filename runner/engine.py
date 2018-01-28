@@ -195,8 +195,8 @@ class EventManager:
             #             log.error('!!!!! TODO/FIXME: REMOVE THIS DEBUG CODE!!!!!')
 
             racers_array = racers.all()[:]
-            lane_tumbler = [x for x in range(0,
-                                 race.lane_ct)]  # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
+            # index is lane # (zero-based), value is list of Racers - (ab)using the term 'Tumbler' for this
+            lane_tumbler = [x for x in range(0, race.lane_ct)]
             for lane in range(1, race.lane_ct + 1):
                 if lane > len(racers_array):
                     # An adjustment to the lane_ct, above, so this should be dead code.
@@ -429,7 +429,7 @@ where run.race_id = c.race_id
         print('Starting race {0}'.format(race.name))
         for run in race.run_set.all().order_by('run_seq'):
             keepResult = False
-            while False == keepResult:
+            while not keepResult:
                 run, keepResult = resultReader(run)
                 #             self.printRunResult(run)
                 #         self.getRaceResults(race)
@@ -455,7 +455,6 @@ def main():
     #     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
     #     print 'Number of arguments:', len(sys.argv), 'arguments.'
     #     print 'Argument List:', str(sys.argv)
-
 
     em = EventManager()
     race = Race.objects.get(name='TEST - General heats race')

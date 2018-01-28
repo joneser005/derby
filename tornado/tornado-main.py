@@ -1,22 +1,13 @@
 #!/usr/bin/env python
-
-# Run this with
-# PYTHONPATH=. DJANGO_SETTINGS_MODULE=testsite.settings testsite/tornado_main.py
-# RJ: PYTHONPATH=. DJANGO_SETTINGS_MODULE=derbysite.settings tornado/tornado_main.py
-# Serves by default at
-# http://localhost:8080/hello-tornado and
-# http://localhost:8080/hello-django
-
 import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
 os.environ.setdefault("PYTHONPATH", ".")
-import logging
 import logging.config
 
 import django  # Jan2014: Added for 1.7
 
-from tornado.options import options, define, parse_command_line
+from tornado.options import options, define
 import django.core.handlers.wsgi
 import tornado.httpserver
 import tornado.ioloop

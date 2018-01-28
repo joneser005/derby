@@ -51,7 +51,8 @@ class EventManagerTestSuite(django.test.TestCase):
         return race, group, curr
 
     def completeRuns(self, race, runs_to_complete):
-        if 0 >= runs_to_complete: return
+        if 0 >= runs_to_complete:
+            return
         print('completeRuns: runs_to_complete={0}'.format(runs_to_complete))
         curr = Current.objects.all()[0]
         starttime = clock()
@@ -406,7 +407,7 @@ class EventManagerTestSuite(django.test.TestCase):
         for run in race.run_set.all().order_by('run_seq'):
             # iterate thru all RunSets, check getRaceStatus for each
             keepResult = False
-            while False == keepResult:
+            while not keepResult:
                 # run a race until we get a result we will keep
                 run, keepResult = resultReaderRandomDnf(run)
 
@@ -424,7 +425,8 @@ class EventManagerTestSuite(django.test.TestCase):
     def validateLaneAssignments(self, race):
         ''' Make sure every Racer races on every lane, and never again itself. '''
         print('Validating {0}'.format(race))
-        # If each lane were to have a Set of Racers, where no duplicates allowed, and we err on duplicate insertion, we can build the sets and check their lengths.
+        # If each lane were to have a Set of Racers, where no duplicates allowed, and we err on duplicate insertion,
+        # we can build the sets and check their lengths.
         lane_dict = {}
         seq_dict = {}
         for lane in range(1, race.lane_ct + 1):
@@ -445,14 +447,14 @@ class EventManagerTestSuite(django.test.TestCase):
 
         for lane in range(1, race.lane_ct + 1):
             racer_list = ''
-            #             print('::::: lane={0}, lane_dict[lane-1]={1}, race.run_set.all()={2}'.format(lane, lane_dict[lane-1], race.run_set.all()))
+#             print('::::: lane={0}, lane_dict[lane-1]={1}, race.run_set.all()={2}'.format(lane, lane_dict[lane-1], race.run_set.all()))
             self.assertTrue(len(lane_dict[lane - 1]) == len(race.run_set.all()),
                             '{0} != {1}'.format(len(lane_dict[lane - 1]), len(race.run_set.all())))
-            #             print('Lane {0} has {1} entries, unique by racer.id'.format(lane, len(lane_dict[lane-1])))
+#             print('Lane {0} has {1} entries, unique by racer.id'.format(lane, len(lane_dict[lane-1])))
             for n in lane_dict[lane - 1]:
                 racer_list += str(lane_dict[lane - 1][n])
                 racer_list += ', '
-                #             print('lane {0} racers: {1}'.format(lane, racer_list))
+#             print('lane {0} racers: {1}'.format(lane, racer_list))
 
         print('Validation complete')
 

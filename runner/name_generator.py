@@ -6,6 +6,8 @@ Created on Jan 10, 2014
 import logging
 import random
 
+import os
+
 log = logging.getLogger('runner')
 
 nouns = []
