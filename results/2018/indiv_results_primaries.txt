@@ -1,0 +1,548 @@
+options={'verbosity': 1, 'settings': None, 'pythonpath': None, 'traceback': False, 'no_color': False, 'action': 'results', 'race_id': '2', 'racer_id': None, 'summary': False}
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #4 - Silver Spoon (Christian Smith : Bear)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #4 - Silver Spoon (Christian Smith : Bear)
+
+Overall race	place: 8
+Cub rank: Bear	place: 3
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.008	2.832 seconds
+	Fastest run speed:     327	345 MPH
+	Average run time:    3.037	3.051 seconds
+	Average run speed:     324	322 MPH
+	Slowest run time:    3.102	4.478 seconds
+	Slowest run speed:     318	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #2	  2	3.036	  324	  4
+	Run #3	  6	3.102	  318	  5
+	Run #5	  1	3.036	  324	  2
+	Run #6	  5	3.032	  324	  5
+	Run #7	  3	3.011	  326	  4
+	Run #12	  4	3.008	  327	  5
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #10 - Red Rider (Zachery Quintero : Bear)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #10 - Red Rider (Zachery Quintero : Bear)
+
+Overall race	place: 6
+Cub rank: Bear	place: 2
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.878	2.832 seconds
+	Fastest run speed:     340	345 MPH
+	Average run time:    2.901	3.051 seconds
+	Average run speed:     338	322 MPH
+	Slowest run time:    2.926	4.478 seconds
+	Slowest run speed:     335	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #3	  4	2.880	  340	  2
+	Run #6	  2	2.915	  336	  3
+	Run #7	  6	2.909	  337	  1
+	Run #9	  1	2.900	  338	  1
+	Run #10	  5	2.878	  340	  1
+	Run #11	  3	2.926	  335	  3
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #18 - The Hulk (Jacob Caylor : Bear)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #18 - The Hulk (Jacob Caylor : Bear)
+
+Overall race	place: 1
+Cub rank: Bear	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.838	2.832 seconds
+	Fastest run speed:     344	345 MPH
+	Average run time:    2.861	3.051 seconds
+	Average run speed:     342	322 MPH
+	Slowest run time:    2.885	4.478 seconds
+	Slowest run speed:     339	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  2	2.859	  342	  2
+	Run #2	  6	2.880	  340	  2
+	Run #4	  1	2.838	  344	  1
+	Run #5	  5	2.885	  339	  1
+	Run #6	  3	2.843	  344	  1
+	Run #11	  4	2.859	  342	  1
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #7 - Darth Vader (Brennan Berg : Tiger)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #7 - Darth Vader (Brennan Berg : Tiger)
+
+Overall race	place: 10
+Cub rank: Tiger	place: 4
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.122	2.832 seconds
+	Fastest run speed:     316	345 MPH
+	Average run time:    3.166	3.051 seconds
+	Average run speed:     312	322 MPH
+	Slowest run time:    3.246	4.478 seconds
+	Slowest run speed:     304	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #2	  4	3.137	  314	  6
+	Run #5	  2	3.246	  304	  5
+	Run #6	  6	3.183	  310	  6
+	Run #8	  1	3.131	  315	  6
+	Run #9	  5	3.179	  310	  6
+	Run #10	  3	3.122	  316	  4
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #11 - Turbo (Damien Manroe : Tiger)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #11 - Turbo (Damien Manroe : Tiger)
+
+Overall race	place: 7
+Cub rank: Tiger	place: 2
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.919	2.832 seconds
+	Fastest run speed:     336	345 MPH
+	Average run time:    2.942	3.051 seconds
+	Average run speed:     333	322 MPH
+	Slowest run time:    2.972	4.478 seconds
+	Slowest run speed:     330	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #4	  4	2.949	  333	  4
+	Run #7	  2	2.972	  330	  3
+	Run #8	  6	2.919	  336	  3
+	Run #10	  1	2.931	  335	  3
+	Run #11	  5	2.931	  335	  4
+	Run #12	  3	2.950	  333	  4
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #12 - Kermit (Joseph Crawford : Tiger)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #12 - Kermit (Joseph Crawford : Tiger)
+
+Overall race	place: 9
+Cub rank: Tiger	place: 3
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.083	2.832 seconds
+	Fastest run speed:     319	345 MPH
+	Average run time:    3.153	3.051 seconds
+	Average run speed:     313	322 MPH
+	Slowest run time:    3.224	4.478 seconds
+	Slowest run speed:     306	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #5	  4	3.224	  306	  3
+	Run #8	  2	3.083	  319	  4
+	Run #9	  6	3.147	  313	  4
+	Run #11	  1	3.154	  313	  6
+	Run #12	  5	3.143	  314	  6
+	Run #13	  3	3.169	  311	  5
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #13 - Wild Krats (Luca Silvio : Tiger)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #13 - Wild Krats (Luca Silvio : Tiger)
+
+Overall race	place: 4
+Cub rank: Tiger	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.880	2.832 seconds
+	Fastest run speed:     340	345 MPH
+	Average run time:    2.896	3.051 seconds
+	Average run speed:     338	322 MPH
+	Slowest run time:    2.921	4.478 seconds
+	Slowest run speed:     336	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  3	2.907	  337	  3
+	Run #6	  4	2.921	  336	  4
+	Run #9	  2	2.902	  338	  2
+	Run #10	  6	2.881	  340	  2
+	Run #12	  1	2.880	  340	  2
+	Run #13	  5	2.888	  339	  2
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #17 - Bald Eagle (Noah Roubal : Tiger)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #17 - Bald Eagle (Noah Roubal : Tiger)
+
+Overall race	place: 12
+Cub rank: Tiger	place: 5
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.222	2.832 seconds
+	Fastest run speed:     306	345 MPH
+	Average run time:    3.288	3.051 seconds
+	Average run speed:     301	322 MPH
+	Slowest run time:    3.361	4.478 seconds
+	Slowest run speed:     294	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  6	3.340	  296	  5
+	Run #3	  1	3.303	  299	  6
+	Run #4	  5	3.266	  303	  5
+	Run #5	  3	3.361	  294	  6
+	Run #10	  4	3.222	  306	  6
+	Run #13	  2	3.233	  305	  6
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #5 - The Rail Zeppelin (Joshua Hiegert : WEBELOS I)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #5 - The Rail Zeppelin (Joshua Hiegert : WEBELOS I)
+
+Overall race	place: 3
+Cub rank: WEBELOS I	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.871	2.832 seconds
+	Fastest run speed:     341	345 MPH
+	Average run time:    2.890	3.051 seconds
+	Average run speed:     339	322 MPH
+	Slowest run time:    2.914	4.478 seconds
+	Slowest run speed:     336	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #3	  2	2.873	  341	  1
+	Run #4	  6	2.871	  341	  2
+	Run #6	  1	2.901	  338	  2
+	Run #7	  5	2.914	  336	  2
+	Run #8	  3	2.896	  338	  2
+	Run #13	  4	2.887	  339	  1
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #14 - The Big Cheese (Cole Bohanon : WEBELOS I)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #14 - The Big Cheese (Cole Bohanon : WEBELOS I)
+
+Overall race	place: 11
+Cub rank: WEBELOS I	place: 2
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.042	2.832 seconds
+	Fastest run speed:     323	345 MPH
+	Average run time:    3.172	3.051 seconds
+	Average run speed:     311	322 MPH
+	Slowest run time:    3.313	4.478 seconds
+	Slowest run speed:     298	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  5	3.313	  298	  4
+	Run #2	  3	3.091	  319	  5
+	Run #7	  4	3.210	  308	  6
+	Run #10	  2	3.216	  307	  5
+	Run #11	  6	3.042	  323	  5
+	Run #13	  1	3.162	  312	  4
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #6 - Hot Rod (Pierce Williams : Wolf)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #6 - Hot Rod (Pierce Williams : Wolf)
+
+Overall race	place: 13
+Cub rank: Wolf	place: 3
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.104	2.832 seconds
+	Fastest run speed:     317	345 MPH
+	Average run time:    3.595	3.051 seconds
+	Average run speed:     275	322 MPH
+	Slowest run time:    4.478	4.478 seconds
+	Slowest run speed:     217	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  4	4.439	  219	  6
+	Run #4	  2	4.478	  217	  6
+	Run #5	  6	3.236	  305	  4
+	Run #7	  1	3.157	  312	  5
+	Run #8	  5	3.104	  317	  5
+	Run #9	  3	3.153	  313	  5
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #15 - Green Lightning (Brendan Winnike : Wolf)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #15 - Green Lightning (Brendan Winnike : Wolf)
+
+Overall race	place: 2
+Cub rank: Wolf	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.832	2.832 seconds
+	Fastest run speed:     345	345 MPH
+	Average run time:    2.862	3.051 seconds
+	Average run speed:     342	322 MPH
+	Slowest run time:    2.888	4.478 seconds
+	Slowest run speed:     339	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  1	2.855	  343	  1
+	Run #2	  5	2.881	  340	  3
+	Run #3	  3	2.888	  339	  3
+	Run #8	  4	2.832	  345	  1
+	Run #11	  2	2.879	  340	  2
+	Run #12	  6	2.838	  344	  1
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #16 - Silver Bullet (Austin Edmunds : Wolf)
+Race: Cub Primary Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 13
+Overall race stats:
+	Fastest run time:  2.832 seconds
+	Fastest run speed: 345 MPH
+	Average run time:  3.051 seconds
+	Average run speed: 322 MPH
+	Slowest run time:  4.478 seconds
+	Slowest run speed: 217 MPH
+
+	13 of 13 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #16 - Silver Bullet (Austin Edmunds : Wolf)
+
+Overall race	place: 5
+Cub rank: Wolf	place: 2
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.849	2.832 seconds
+	Fastest run speed:     343	345 MPH
+	Average run time:    2.898	3.051 seconds
+	Average run speed:     338	322 MPH
+	Slowest run time:    2.945	4.478 seconds
+	Slowest run speed:     333	217 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #2	  1	2.849	  343	  1
+	Run #3	  5	2.894	  338	  4
+	Run #4	  3	2.908	  337	  3
+	Run #9	  4	2.945	  333	  3
+	Run #12	  2	2.889	  339	  3
+	Run #13	  6	2.904	  337	  3
+
+--------------------------------------------------------------------------------
+

@@ -1,0 +1,254 @@
+options={'verbosity': 1, 'settings': None, 'pythonpath': None, 'traceback': False, 'no_color': False, 'action': 'results', 'race_id': '6', 'racer_id': None, 'summary': False}
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #23 - The Terminator (Colt Russell : Bear)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #23 - The Terminator (Colt Russell : Bear)
+
+Overall race	place: 1
+Cub rank: Bear	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.976	2.884 seconds
+	Fastest run speed:     330	339 MPH
+	Average run time:    3.042	3.146 seconds
+	Average run speed:     323	313 MPH
+	Slowest run time:    3.103	3.665 seconds
+	Slowest run speed:     317	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  3	2.976	  330	  2
+	Run #2	  5	3.021	  325	  1
+	Run #3	  4	3.007	  327	  2
+	Run #4	  2	3.093	  318	  3
+	Run #5	  1	3.055	  322	  4
+	Run #6	  6	3.103	  317	  4
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #24 - Chase Car 1 (Chase Car Driver : None)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #24 - Chase Car 1 (Chase Car Driver : None)
+
+Overall race	place: 5
+Cub rank: None	place: 4
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.884	2.884 seconds
+	Fastest run speed:     339	339 MPH
+	Average run time:    3.183	3.146 seconds
+	Average run speed:     310	313 MPH
+	Slowest run time:    3.403	3.665 seconds
+	Slowest run speed:     291	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  6	3.246	  304	  5
+	Run #2	  3	3.085	  319	  3
+	Run #3	  5	3.139	  314	  4
+	Run #4	  4	3.343	  296	  5
+	Run #5	  2	3.403	  291	  5
+	Run #6	  1	2.884	  339	  1
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #25 - Chase Car 2 (Chase Car Driver : None)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #25 - Chase Car 2 (Chase Car Driver : None)
+
+Overall race	place: 4
+Cub rank: None	place: 3
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.928	2.884 seconds
+	Fastest run speed:     335	339 MPH
+	Average run time:    3.165	3.146 seconds
+	Average run speed:     312	313 MPH
+	Slowest run time:    3.429	3.665 seconds
+	Slowest run speed:     289	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  1	3.429	  289	  6
+	Run #2	  6	3.355	  295	  6
+	Run #3	  3	2.928	  335	  1
+	Run #4	  5	3.164	  312	  4
+	Run #5	  4	3.027	  325	  2
+	Run #6	  2	3.086	  319	  3
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #26 - Chase Car 3 (Chase Car Driver : None)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #26 - Chase Car 3 (Chase Car Driver : None)
+
+Overall race	place: 3
+Cub rank: None	place: 2
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.902	2.884 seconds
+	Fastest run speed:     338	339 MPH
+	Average run time:    3.132	3.146 seconds
+	Average run speed:     315	313 MPH
+	Slowest run time:    3.371	3.665 seconds
+	Slowest run speed:     293	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  2	2.902	  338	  1
+	Run #2	  1	3.189	  309	  4
+	Run #3	  6	3.040	  324	  3
+	Run #4	  3	3.371	  293	  6
+	Run #5	  5	3.048	  323	  3
+	Run #6	  4	3.240	  305	  5
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #27 - Chase Car 4 (Chase Car Driver : None)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #27 - Chase Car 4 (Chase Car Driver : None)
+
+Overall race	place: 2
+Cub rank: None	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.904	2.884 seconds
+	Fastest run speed:     337	339 MPH
+	Average run time:    3.085	3.146 seconds
+	Average run speed:     319	313 MPH
+	Slowest run time:    3.371	3.665 seconds
+	Slowest run speed:     293	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  4	3.035	  324	  4
+	Run #2	  2	3.060	  322	  2
+	Run #3	  1	3.371	  293	  6
+	Run #4	  6	3.076	  320	  2
+	Run #5	  3	2.904	  337	  1
+	Run #6	  5	3.063	  321	  2
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #28 - Chase Car 5 (Chase Car Driver : None)
+Race: Colt's Races - Pack 180 2018 Pinewood Derby
+Lanes in use: 6
+Number of race participants: 6
+Overall race stats:
+	Fastest run time:  2.884 seconds
+	Fastest run speed: 339 MPH
+	Average run time:  3.146 seconds
+	Average run speed: 313 MPH
+	Slowest run time:  3.665 seconds
+	Slowest run speed: 270 MPH
+
+	6 of 6 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #28 - Chase Car 5 (Chase Car Driver : None)
+
+Overall race	place: 6
+Cub rank: None	place: 5
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.948	2.884 seconds
+	Fastest run speed:     333	339 MPH
+	Average run time:    3.268	3.146 seconds
+	Average run speed:     302	313 MPH
+	Slowest run time:    3.665	3.665 seconds
+	Slowest run speed:     270	270 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  5	2.976	  330	  2
+	Run #2	  4	3.259	  303	  5
+	Run #3	  2	3.261	  303	  5
+	Run #4	  1	2.948	  333	  1
+	Run #5	  6	3.501	  283	  6
+	Run #6	  3	3.665	  270	  6
+
+--------------------------------------------------------------------------------
+

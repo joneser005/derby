@@ -1,0 +1,162 @@
+options={'verbosity': 1, 'settings': None, 'pythonpath': None, 'traceback': False, 'no_color': False, 'action': 'results', 'race_id': '3', 'racer_id': None, 'summary': False}
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #10 - Red Rider (Zachery Quintero : Bear)
+Race: Wildcard Round - Pack 180 2018 Pinewood Derby
+Lanes in use: 4
+Number of race participants: 4
+Overall race stats:
+	Fastest run time:  2.931 seconds
+	Fastest run speed: 335 MPH
+	Average run time:  2.992 seconds
+	Average run speed: 328 MPH
+	Slowest run time:  3.093 seconds
+	Slowest run speed: 318 MPH
+
+	1 of 4 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #10 - Red Rider (Zachery Quintero : Bear)
+
+Overall race	place: 2
+Cub rank: Bear	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.959	2.931 seconds
+	Fastest run speed:     332	335 MPH
+	Average run time:    2.959	2.992 seconds
+	Average run speed:     332	328 MPH
+	Slowest run time:    2.959	3.093 seconds
+	Slowest run speed:     332	318 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  2	2.959	  332	  2
+	Run #2	  4	-	  -	  -
+	Run #3	  1	-	  -	  -
+	Run #4	  3	-	  -	  -
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #11 - Turbo (Damien Manroe : Tiger)
+Race: Wildcard Round - Pack 180 2018 Pinewood Derby
+Lanes in use: 4
+Number of race participants: 4
+Overall race stats:
+	Fastest run time:  2.931 seconds
+	Fastest run speed: 335 MPH
+	Average run time:  2.992 seconds
+	Average run speed: 328 MPH
+	Slowest run time:  3.093 seconds
+	Slowest run speed: 318 MPH
+
+	1 of 4 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #11 - Turbo (Damien Manroe : Tiger)
+
+Overall race	place: 3
+Cub rank: Tiger	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.984	2.931 seconds
+	Fastest run speed:     329	335 MPH
+	Average run time:    2.984	2.992 seconds
+	Average run speed:     329	328 MPH
+	Slowest run time:    2.984	3.093 seconds
+	Slowest run speed:     329	318 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  3	2.984	  329	  3
+	Run #2	  2	-	  -	  -
+	Run #3	  4	-	  -	  -
+	Run #4	  1	-	  -	  -
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #14 - The Big Cheese (Cole Bohanon : WEBELOS I)
+Race: Wildcard Round - Pack 180 2018 Pinewood Derby
+Lanes in use: 4
+Number of race participants: 4
+Overall race stats:
+	Fastest run time:  2.931 seconds
+	Fastest run speed: 335 MPH
+	Average run time:  2.992 seconds
+	Average run speed: 328 MPH
+	Slowest run time:  3.093 seconds
+	Slowest run speed: 318 MPH
+
+	1 of 4 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #14 - The Big Cheese (Cole Bohanon : WEBELOS I)
+
+Overall race	place: 4
+Cub rank: WEBELOS I	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    3.093	2.931 seconds
+	Fastest run speed:     318	335 MPH
+	Average run time:    3.093	2.992 seconds
+	Average run speed:     318	328 MPH
+	Slowest run time:    3.093	3.093 seconds
+	Slowest run speed:     318	318 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  1	3.093	  318	  4
+	Run #2	  3	-	  -	  -
+	Run #3	  2	-	  -	  -
+	Run #4	  4	-	  -	  -
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+RACE RESULTS
+Racer #16 - Silver Bullet (Austin Edmunds : Wolf)
+Race: Wildcard Round - Pack 180 2018 Pinewood Derby
+Lanes in use: 4
+Number of race participants: 4
+Overall race stats:
+	Fastest run time:  2.931 seconds
+	Fastest run speed: 335 MPH
+	Average run time:  2.992 seconds
+	Average run speed: 328 MPH
+	Slowest run time:  3.093 seconds
+	Slowest run speed: 318 MPH
+
+	1 of 4 runs are completed.
+................................................................................
+INDIVIDUAL RACE RESULTS
+Racer #16 - Silver Bullet (Austin Edmunds : Wolf)
+
+Overall race	place: 1
+Cub rank: Wolf	place: 1
+	                     Racer	Overall
+	                     -----	------------
+	Fastest run time:    2.931	2.931 seconds
+	Fastest run speed:     335	335 MPH
+	Average run time:    2.931	2.992 seconds
+	Average run speed:     335	328 MPH
+	Slowest run time:    2.931	3.093 seconds
+	Slowest run speed:     335	318 MPH
+
+Individuals Runs:
+
+	      	Lane	 Time	  MPH	Place
+	      	----	------	-------	-----
+	Run #1	  4	2.931	  335	  1
+	Run #2	  1	-	  -	  -
+	Run #3	  3	-	  -	  -
+	Run #4	  2	-	  -	  -
+
+--------------------------------------------------------------------------------
+
