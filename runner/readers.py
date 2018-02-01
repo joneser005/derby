@@ -78,8 +78,10 @@ class MockFastTrackResultReader(threading.Thread):
 
     def getMockResult(self):
         log.info('ENTER getMockResult')
-        time.sleep(2)
-        results = [round(random.uniform(3, 7), 3) for _ in range(6)]
+        if random.choice([True, False]):
+            results = [round(random.uniform(9, 10), 3) for _ in range(6)]
+        else:
+            results = [round(random.uniform(1, 7), 3) for _ in range(6)]
         result = '=' + '='.join(map(str, results))
         log.debug('[MOCK] Result={}'.format(result))
         log.info('EXIT getMockResult')
