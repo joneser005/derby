@@ -1,4 +1,3 @@
-var RACE_UPDATE_PORT = 8787;
 var RACE_UPDATE_PROTOCOL = "json";
 var CURRENT_CLASS = 'run_current'; /* DO NOT CHANGE - value referenced in html */
 var CURRENT_ID = 'run_current';
@@ -53,11 +52,11 @@ function getRun(data, run_seq) {
 
 function prettyDate(x) {
 	/* Converts a date like:
-	 * 
+	 *
 	 * 2013-11-24T22:08:05.034439
-	 * 
+	 *
 	 * to
-	 * 
+	 *
 	 * 2013-11-24 22:08:05
 	 */
 	if (null != x && undefined != x) {
@@ -142,7 +141,7 @@ function renderRun(data, run_seq, reversed, detailed) {
 
 	var row = ['<tr class="thin-hborder divider status-heading '+ cls +'"><td colspan="'+ parseInt(data.lane_ct-1) +
 	           			'" width="90%" class="big-text">Run '+ run.run_seq +' of '+ data.runs.length +
-	           			run_stamp +'</td><td colspan="2" class="center">'+prev_nav_snip + '&nbsp;&nbsp;&nbsp;' + ((true == isCurrentRun) ? '&nbsp;&nbsp;&nbsp;' : curr_nav_snip) + '&nbsp;&nbsp;&nbsp;' + next_nav_snip+'</td>', 
+	           			run_stamp +'</td><td colspan="2" class="center">'+prev_nav_snip + '&nbsp;&nbsp;&nbsp;' + ((true == isCurrentRun) ? '&nbsp;&nbsp;&nbsp;' : curr_nav_snip) + '&nbsp;&nbsp;&nbsp;' + next_nav_snip+'</td>',
 				'<tr class="thin-hborder"><td width="10%" class="big-text">Lane</td>',
 				imgrow,
 	            '<tr class="thin-hborder"><td class="big-text">Car name</td>',
