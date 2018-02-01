@@ -5,6 +5,7 @@
 <meta charset="utf-8">
 <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
 <link rel="icon" href="/static/favicon.png" type="image/png">
+
 <link href="/static/css/blitzer/jquery-ui-1.10.3.custom.css" rel="stylesheet">
 <script src="/static/js/jquery-1.9.1.js"></script>
 <script src="/static/js/jquery-ui-1.10.3.custom.js"></script>
@@ -233,12 +234,24 @@ function getTrackResults(eventObj) {
 		console.log("SUCCESS: refreshData completed, result data = ", data);
 		$('#last_refresh').text(data.now);
 		confirmMsg = "Results timestamp: " + data[0];
+		var falseStart = true;  /* Set to false if any lane result is > zero & < 9 */
 		for (key in data) {
 			if ("0" == key) continue;
+			if (0 < data[key] && data[key] < 9) {
+			    falseStart = false;
+			}
 			confirmMsg += '\n\tLane ' + key + ': ' + data[key] + ' sec.';
 		}
-		confirmMsg += "\n\nApply these results to Run #" + run_seq + "?";
-		keepResult = window.confirm(confirmMsg);
+
+        if (falseStart) {
+            confirmMsg += "\n\nFALSE START!  RUN RESULTS MUST BE REJECTED.";
+            keepResult = false;
+            window.alert(confirmMsg);
+        } else {
+		    confirmMsg += "\n\nApply these results to Run #" + run_seq + "?";
+    		keepResult = window.confirm(confirmMsg);
+        }
+
 		if (keepResult) {
 			saveResults(run_seq, data);
 		}
