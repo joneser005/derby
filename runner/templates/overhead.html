@@ -17,6 +17,7 @@
 <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
 <link rel="icon" href="/static/favicon.png" type="image/png">
 <style>
+/*  TODO: Why is this here an not in myderby.css?  Move there, then test these styles: */
 table.result-table {
     border-collapse:collapse  !important;
     border: 2px solid black !important;
@@ -39,9 +40,8 @@ table.result-table td, th {
 	background: transparent;
 	border: none;
 }
-
 .ui-dialog {
-	background: #fff000;
+	background: #ccccff;
 }
 </style>
 <script>
@@ -55,7 +55,7 @@ table.result-table td, th {
      runs:
          [{run_id:id,
            run_seq:seq,
-           run_completed:1|0, 
+           run_completed:1|0,
            runplaces:
               [{runplace_id:id, lane:no, rp.person_name, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
                {runplace_id:id, lane:no, rp.person_name, racer_id:id, racer_name:name, racer_img:picture, seconds:secs, dnf:1|0, stamp:dt},
@@ -68,24 +68,22 @@ var TABLE_HEADINGS_STANDINGS = "<tr class='standings-heading'><th width='5%'>Pla
 var CYCLE_MS = 4000;
 var ANIMATE_MS = 400;
 var ws_refresh = null;
-var screenToggle = false;
-//var SCREEN_TOGGLE_MS = 6 * (CYCLE_MS + ANIMATE_MS) + 2 * ANIMATE_MS;
+var screenToggle = true;
 var SCREEN_TOGGLE_MS = 6 * CYCLE_MS + ANIMATE_MS;
 var screenToggleValue = 0; /* flip btw 0 and 1 for now */
 var socketConnected = false;
 
 /*****************************************************************************
- * BEGIN LastRaceResult 
+ * BEGIN LastRaceResult
  *****************************************************************************/
 
 function sortByTime(a, b) {
 	var asec = a.seconds;
-	var bsec = b.seconds; 
+	var bsec = b.seconds;
 	return ((asec < bsec) ? -1 : ((asec > bsec) ? 1 : 0));
 }
 
 function showResultDialog() {
-	// $("#rundetail_dialog").toggle("pulsate"); slow on some devices
 	$("#rundetail_dialog").dialog("open");
 }
 
@@ -103,7 +101,6 @@ function getResultHtml(data) {
 		run = data.runs[run_ind];
 		run.runplaces.sort(sortByTime);
 		console.log('run=', run);
-		$("#rundetail_dialog").dialog("option", "title", "Run #" + run.run_seq.toString() + " - " + prettyDate(run.run_stamp));
 		if (lastRun) {
 			results = "<h1 class='center'>Race Complete!</h1>";
 		} else {
@@ -120,6 +117,8 @@ function getResultHtml(data) {
 			row += "<td class='center'>"+speed(rp.seconds)+"</td><td class='center'>"+rp.lane+"</td></tr>";
 			results += row;
 		}
+
+		$("#rundetail_dialog").dialog("option", "title", "Run #" + run.run_seq.toString() + " - " + prettyDate(run.run_stamp));
 
 /*
 		{run_seq: 5, run_completed: true, runplaces: Array[6], run_stamp: "2014-01-12T14:59:14.689196", run_id: 5}
@@ -139,16 +138,15 @@ function getResultHtml(data) {
 }
 
 function updateResults(data) {
-	/* Show last race result, top-dwon, in place order 
-	Add a call to this method in updateStatus, then we can hide/show dialog with the info */
+	/* Show last race result, top-down, in place order */
 
 	var html = getResultHtml(data);
 	$('#rundetail_dialog').html(html);
 }
 
-/* Dialog code is farther below, near the end of this source. */
-
 function apply_ordinal() {
+	/* NOTE: This only works for times < 10 sec.  Mentioned here in case
+		this is ever used for longer-running races (e.g a 'turtle race') */
 	$(".ordinal").each(function () {
 		i = $(this).text();
 		if (parseInt(i) == i) {
@@ -168,10 +166,10 @@ function apply_ordinal() {
 }
 
 /*****************************************************************************
- * END LastRaceResult 
+ * END LastRaceResult
  *****************************************************************************/
 
-/* mode = 'standings' or 'status' 
+/* mode = 'standings' or 'status'
  * updateUi = function to update UI
  */
 function refreshData(mode, updateUI, nocache) {
@@ -191,7 +189,6 @@ function refreshData(mode, updateUI, nocache) {
 		/* 12/29: FYI data.now is only populated on status, not standings */
 		updateLastRefreshUI(data.now);
 		if (mode == 'status') {
-//			var pct = ((data['current_run_seq']-1) / data.runs.length) * 100; // OLD, not accurate after the last run
 			var completed = data.runs.filter(function(value) { return value.run_completed == true }).length;
 			var pct = (completed / data.runs.length) * 100;
 			updateStatusbar(Math.round(pct));
@@ -205,7 +202,7 @@ function refreshData(mode, updateUI, nocache) {
 }
 
 /*****************************************************************************
- * BEGIN Status 
+ * BEGIN Status
  *****************************************************************************/
 function updateStatus() {
 	console.log('ENTER updateStatus');
@@ -227,7 +224,7 @@ function updateStatus() {
 	console.log('EXIT updateStatus');
 }
 /*****************************************************************************
- * END Status, BEGIN Standings 
+ * END Status, BEGIN Standings
  *****************************************************************************/
 function getStandingsRow(r, seq, evenOddInd, uniq) {
 	var rankSlug = slugify(r.rank);
@@ -266,27 +263,30 @@ function updateStandings() {
 			if ("Tiger" == data[i].rank) rankInd = 1;
 			else if ("Wolf" == data[i].rank) rankInd = 2;
 			else if ("Bear" == data[i].rank) rankInd = 3;
+			else if ("WEBELOS" == data[i].rank) rankInd = 4;
+			else if ("AoL" == data[i].rank) rankInd = 5;
+			/* Legacy rank names: */
 			else if ("WEBELOS I" == data[i].rank) rankInd = 4;
 			else if ("WEBELOS II" == data[i].rank) rankInd = 5;
 			/* else if ("None" == data[i].rank) {
 			FIXME: Assign None/other to rankInd 6 (currently zero, which is reserved for the overall standings bucket, hence the if (rankInd > 0) block, a few lines later/below)
 			Problem is, we don't yet have a [6] rank to hold/show results
-			Of course, we could just leave it as-is (rankInd==0) and just ontinue to filter out from overall results, per below
+			Of course, we could just leave it as-is (rankInd==0) and just continue to filter out from overall results, per below
 				rankInd = 6;
 				data[i].
 			*/
 			if (data[i].average != placeCounts[rankInd][2]) placeCounts[rankInd][1]++;
 			placeCounts[rankInd][2] = data[i].average;
-			
+
 			$("#tblStandingsAll").append(getStandingsRow(data[i], placeCounts[0][1], (i%2), 'all')); /* placeCounts[0][*] are for overall standings */
-			if (rankInd > 0) { // DEC2015: skip 'other' (rankInd is zero) else we inadvertently add the standings row to the overall standings tab (again) 
+			if (rankInd > 0) { // DEC2015: skip 'other' (rankInd is zero) else we inadvertently add the standings row to the overall standings tab (again)
 				$(placeCounts[rankInd][0]).append(
 					getStandingsRow(
 						data[i],
 						placeCounts[rankInd][1],
 						placeCounts[rankInd][1] % 2, ''));
 			}
-			
+
 			var pb = '#progress-' + data[i].racer_id + 'all';
 			var pbl = '#proglabel-' + data[i].racer_id + 'all';
 			$(pbl).text(String(data[i].count+"/{{ lane_ct }}"));
@@ -323,7 +323,7 @@ function updateStandings() {
 	});
 }
 /*****************************************************************************
- * END Standings 
+ * END Standings
  *****************************************************************************/
 
 function listenForUpdates() {
@@ -420,7 +420,7 @@ function startup() {
 			updateStatus(true);
 		});
 	}
-	
+
 	$('#reverseLaneDisplay').click(function() {
 		console.log('START calling reverseLaneDisplay()');
 		reverseLaneDisplay();
@@ -464,7 +464,6 @@ function startup() {
             <button id="refreshStatus" class="view_status">Refresh status (for older browsers)</button>
             <button id="reverseLaneDisplay">Reverse lane display</button>
 			<!--  for testing:
-			<button id="testResultDialog" onclick="showResultDialog()">Test result dialog</button>
 			<button id="testSpeed" onclick='testSpeed()'>testSpeed</button>
 			 end testing  -->
 			</td>
@@ -485,8 +484,8 @@ function startup() {
 		   <li class="tab"><a href="#divTiger">Tiger</a></li>
 		   <li class="tab"><a href="#divWolf">Wolf</a></li>
 		   <li class="tab"><a href="#divBear">Bear</a></li>
-		   <li class="tab"><a href="#divWI">WEBELOS I</a></li>
-		   <li class="tab"><a href="#divWII">WEBELOS II</a></li>
+		   <li class="tab"><a href="#divWI">WEBELOS</a></li>
+		   <li class="tab"><a href="#divWII">Arrow of Light</a></li>
 		</ul>
 
 		<div id="divAll">
@@ -516,7 +515,7 @@ function startup() {
 	</div>
 	</td></tr>
 
-	
+
 
 <tr><td>
 	<!--  Status view -->
