@@ -9,15 +9,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 admin.autodiscover()
 
+app_name = 'runner'
+
 urlpatterns = [
     url(r'^admin_tools/', include('admin_tools.urls')),
     url(r'^runner/', include('runner.urls')),
-
-    # Uncomment the admin/doc line below to enable admin documentation:
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
     url(r'^admin/', admin.site.urls),
-
     url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
 ]

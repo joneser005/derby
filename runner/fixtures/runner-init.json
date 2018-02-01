@@ -1,525 +1,525 @@
 [
 {
-    "pk": 1, 
-    "model": "runner.derbyevent", 
+    "pk": 1,
+    "model": "runner.derbyevent",
     "fields": {
-        "event_name": "TEST EVENT 1", 
-        "event_date": "2013-11-18", 
+        "event_name": "TEST EVENT 1",
+        "event_date": "2013-11-18",
         "stamp": "2013-11-18T17:46:13.573"
     }
 },
 {
-    "pk": 1, 
-    "model": "runner.person", 
+    "pk": 1,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "John", 
-        "name_last": "Tackkett", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "John",
+        "name_last": "Tackkett",
         "rank": "Tiger"
     }
 },
 {
-    "pk": 2, 
-    "model": "runner.person", 
+    "pk": 2,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Brown", 
-        "name_last": "Jeff", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Brown",
+        "name_last": "Jeff",
         "rank": "Wolf"
     }
 },
 {
-    "pk": 3, 
-    "model": "runner.person", 
+    "pk": 3,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Charles", 
-        "name_last": "Geddes", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Charles",
+        "name_last": "Geddes",
         "rank": "Bear"
     }
 },
 {
-    "pk": 4, 
-    "model": "runner.person", 
+    "pk": 4,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "David", 
-        "name_last": "Martin", 
-        "rank": "WEBELOS I"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "David",
+        "name_last": "Martin",
+        "rank": "WEBELOS"
     }
 },
 {
-    "pk": 5, 
-    "model": "runner.person", 
+    "pk": 5,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Mike", 
-        "name_last": "Atkinson", 
-        "rank": "WEBELOS II"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Mike",
+        "name_last": "Atkinson",
+        "rank": "AoL"
     }
 },
 {
-    "pk": 6, 
-    "model": "runner.person", 
+    "pk": 6,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Betty", 
-        "name_last": "Nwabuonwu", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Betty",
+        "name_last": "Nwabuonwu",
         "rank": "Tiger"
     }
 },
 {
-    "pk": 7, 
-    "model": "runner.person", 
+    "pk": 7,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "George", 
-        "name_last": "Canzonere", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "George",
+        "name_last": "Canzonere",
         "rank": "Wolf"
     }
 },
 {
-    "pk": 8, 
-    "model": "runner.person", 
+    "pk": 8,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Curt", 
-        "name_last": "Brown", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Curt",
+        "name_last": "Brown",
         "rank": "Bear"
     }
 },
 {
-    "pk": 9, 
-    "model": "runner.person", 
+    "pk": 9,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Chuck", 
-        "name_last": "Jackson", 
-        "rank": "WEBELOS I"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Chuck",
+        "name_last": "Jackson",
+        "rank": "WEBELOS"
     }
 },
 {
-    "pk": 10, 
-    "model": "runner.person", 
+    "pk": 10,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Jeremiah", 
-        "name_last": "Cox", 
-        "rank": "WEBELOS II"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Jeremiah",
+        "name_last": "Cox",
+        "rank": "AoL"
     }
 },
 {
-    "pk": 11, 
-    "model": "runner.person", 
+    "pk": 11,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Mark", 
-        "name_last": "Tarantino", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Mark",
+        "name_last": "Tarantino",
         "rank": "Tiger"
     }
 },
 {
-    "pk": 12, 
-    "model": "runner.person", 
+    "pk": 12,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Brad", 
-        "name_last": "Dowdy", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Brad",
+        "name_last": "Dowdy",
         "rank": "Wolf"
     }
 },
 {
-    "pk": 13, 
-    "model": "runner.person", 
+    "pk": 13,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Chris", 
-        "name_last": "Bernard", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Chris",
+        "name_last": "Bernard",
         "rank": "Bear"
     }
 },
 {
-    "pk": 14, 
-    "model": "runner.person", 
+    "pk": 14,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Kathy", 
-        "name_last": "Morris", 
-        "rank": "WEBELOS I"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Kathy",
+        "name_last": "Morris",
+        "rank": "WEBELOS"
     }
 },
 {
-    "pk": 15, 
-    "model": "runner.person", 
+    "pk": 15,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Jeff", 
-        "name_last": "Stevens", 
-        "rank": "WEBELOS II"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Jeff",
+        "name_last": "Stevens",
+        "rank": "AoL"
     }
 },
 {
-    "pk": 16, 
-    "model": "runner.person", 
+    "pk": 16,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Kevin", 
-        "name_last": "Starkey", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Kevin",
+        "name_last": "Starkey",
         "rank": "Tiger"
     }
 },
 {
-    "pk": 17, 
-    "model": "runner.person", 
+    "pk": 17,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Dayna", 
-        "name_last": "Reed", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Dayna",
+        "name_last": "Reed",
         "rank": "Wolf"
     }
 },
 {
-    "pk": 18, 
-    "model": "runner.person", 
+    "pk": 18,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Rick", 
-        "name_last": "Nowicki", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Rick",
+        "name_last": "Nowicki",
         "rank": "Bear"
     }
 },
 {
-    "pk": 19, 
-    "model": "runner.person", 
+    "pk": 19,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Ron", 
-        "name_last": "Davis", 
-        "rank": "WEBELOS I"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Ron",
+        "name_last": "Davis",
+        "rank": "WEBELOS"
     }
 },
 {
-    "pk": 20, 
-    "model": "runner.person", 
+    "pk": 20,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "David", 
-        "name_last": "Simmons", 
-        "rank": "WEBELOS II"
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "David",
+        "name_last": "Simmons",
+        "rank": "AoL"
     }
 },
 {
-    "pk": 21, 
-    "model": "runner.person", 
+    "pk": 21,
+    "model": "runner.person",
     "fields": {
-        "stamp": "2013-11-19T00:01:29", 
-        "picture": "", 
-        "name_first": "Tracey", 
-        "name_last": "Scott", 
+        "stamp": "2013-11-19T00:01:29",
+        "picture": "",
+        "name_first": "Tracey",
+        "name_last": "Scott",
         "rank": "Tiger"
     }
 },
 {
-    "pk": 101, 
-    "model": "runner.racer", 
+    "pk": 101,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:20:01.657", 
-        "person": 5, 
-        "name": "Mike Bike", 
+        "stamp": "2013-11-18T18:20:01.657",
+        "person": 5,
+        "name": "Mike Bike",
         "picture": ""
     }
 },
 {
-    "pk": 102, 
-    "model": "runner.racer", 
+    "pk": 102,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:20:18.067", 
-        "person": 13, 
-        "name": "Chris's Discus", 
+        "stamp": "2013-11-18T18:20:18.067",
+        "person": 13,
+        "name": "Chris's Discus",
         "picture": ""
     }
 },
 {
-    "pk": 103, 
-    "model": "runner.racer", 
+    "pk": 103,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:20:35.930", 
-        "person": 8, 
-        "name": "Curt's Bird", 
+        "stamp": "2013-11-18T18:20:35.930",
+        "person": 8,
+        "name": "Curt's Bird",
         "picture": ""
     }
 },
 {
-    "pk": 104, 
-    "model": "runner.racer", 
+    "pk": 104,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:20:55.551", 
-        "person": 7, 
-        "name": "George's Golf Cart", 
+        "stamp": "2013-11-18T18:20:55.551",
+        "person": 7,
+        "name": "George's Golf Cart",
         "picture": ""
     }
 },
 {
-    "pk": 5, 
-    "model": "runner.racer", 
+    "pk": 5,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:21:15.354", 
-        "person": 10, 
-        "name": "Jeremiah's Connestoga", 
+        "stamp": "2013-11-18T18:21:15.354",
+        "person": 10,
+        "name": "Jeremiah's Connestoga",
         "picture": ""
     }
 },
 {
-    "pk": 16, 
-    "model": "runner.racer", 
+    "pk": 16,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:21:34.529", 
-        "person": 19, 
-        "name": "Ron's Gambling Boat", 
+        "stamp": "2013-11-18T18:21:34.529",
+        "person": 19,
+        "name": "Ron's Gambling Boat",
         "picture": ""
     }
 },
 {
-    "pk": 107, 
-    "model": "runner.racer", 
+    "pk": 107,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:21:52.314", 
-        "person": 12, 
-        "name": "Brad's Rad Racer", 
+        "stamp": "2013-11-18T18:21:52.314",
+        "person": 12,
+        "name": "Brad's Rad Racer",
         "picture": ""
     }
 },
 {
-    "pk": 108, 
-    "model": "runner.racer", 
+    "pk": 108,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:22:08.774", 
-        "person": 3, 
-        "name": "Charles's Boat", 
+        "stamp": "2013-11-18T18:22:08.774",
+        "person": 3,
+        "name": "Charles's Boat",
         "picture": ""
     }
 },
 {
-    "pk": 109, 
-    "model": "runner.racer", 
+    "pk": 109,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:22:17.395", 
-        "person": 9, 
-        "name": "Chuck's Wagon", 
+        "stamp": "2013-11-18T18:22:17.395",
+        "person": 9,
+        "name": "Chuck's Wagon",
         "picture": ""
     }
 },
 {
-    "pk": 110, 
-    "model": "runner.racer", 
+    "pk": 110,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:22:37.352", 
-        "person": 2, 
-        "name": "Jeff's Boomerang", 
+        "stamp": "2013-11-18T18:22:37.352",
+        "person": 2,
+        "name": "Jeff's Boomerang",
         "picture": ""
     }
 },
 {
-    "pk": 111, 
-    "model": "runner.racer", 
+    "pk": 111,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:22:48.678", 
-        "person": 4, 
-        "name": "David's Chariot", 
+        "stamp": "2013-11-18T18:22:48.678",
+        "person": 4,
+        "name": "David's Chariot",
         "picture": ""
     }
 },
 {
-    "pk": 112, 
-    "model": "runner.racer", 
+    "pk": 112,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:23:00.727", 
-        "person": 14, 
-        "name": "Kathy's Rowboat", 
+        "stamp": "2013-11-18T18:23:00.727",
+        "person": 14,
+        "name": "Kathy's Rowboat",
         "picture": ""
     }
 },
 {
-    "pk": 113, 
-    "model": "runner.racer", 
+    "pk": 113,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:23:11.166", 
-        "person": 18, 
-        "name": "Rick's MG", 
+        "stamp": "2013-11-18T18:23:11.166",
+        "person": 18,
+        "name": "Rick's MG",
         "picture": ""
     }
 },
 {
-    "pk": 114, 
-    "model": "runner.racer", 
+    "pk": 114,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:23:23.471", 
-        "person": 6, 
-        "name": "Betty's Airplane", 
+        "stamp": "2013-11-18T18:23:23.471",
+        "person": 6,
+        "name": "Betty's Airplane",
         "picture": ""
     }
 },
 {
-    "pk": 115, 
-    "model": "runner.racer", 
+    "pk": 115,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:23:36.328", 
-        "person": 17, 
-        "name": "Dayna's Dingy", 
+        "stamp": "2013-11-18T18:23:36.328",
+        "person": 17,
+        "name": "Dayna's Dingy",
         "picture": ""
     }
 },
 {
-    "pk": 116, 
-    "model": "runner.racer", 
+    "pk": 116,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:23:48.160", 
-        "person": 21, 
-        "name": "Tracey's Train", 
+        "stamp": "2013-11-18T18:23:48.160",
+        "person": 21,
+        "name": "Tracey's Train",
         "picture": ""
     }
 },
 {
-    "pk": 117, 
-    "model": "runner.racer", 
+    "pk": 117,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:24:00.701", 
-        "person": 20, 
-        "name": "David's Scooter", 
+        "stamp": "2013-11-18T18:24:00.701",
+        "person": 20,
+        "name": "David's Scooter",
         "picture": ""
     }
 },
 {
-    "pk": 118, 
-    "model": "runner.racer", 
+    "pk": 118,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:24:12.808", 
-        "person": 16, 
-        "name": "Kevin's BBQ Pit", 
+        "stamp": "2013-11-18T18:24:12.808",
+        "person": 16,
+        "name": "Kevin's BBQ Pit",
         "picture": ""
     }
 },
 {
-    "pk": 119, 
-    "model": "runner.racer", 
+    "pk": 119,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:24:26.117", 
-        "person": 15, 
-        "name": "Jeff's Band", 
+        "stamp": "2013-11-18T18:24:26.117",
+        "person": 15,
+        "name": "Jeff's Band",
         "picture": ""
     }
 },
 {
-    "pk": 120, 
-    "model": "runner.racer", 
+    "pk": 120,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:24:37.889", 
-        "person": 1, 
-        "name": "John's Habanero", 
+        "stamp": "2013-11-18T18:24:37.889",
+        "person": 1,
+        "name": "John's Habanero",
         "picture": ""
     }
 },
 {
-    "pk": 121, 
-    "model": "runner.racer", 
+    "pk": 121,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:25:06.351", 
-        "person": 11, 
-        "name": "Mark's Intrepid", 
+        "stamp": "2013-11-18T18:25:06.351",
+        "person": 11,
+        "name": "Mark's Intrepid",
         "picture": ""
     }
 },
 {
-    "pk": 122, 
-    "model": "runner.racer", 
+    "pk": 122,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:25:16.365", 
-        "person": 11, 
-        "name": "Mark's 2nd Car", 
+        "stamp": "2013-11-18T18:25:16.365",
+        "person": 11,
+        "name": "Mark's 2nd Car",
         "picture": ""
     }
 },
 {
-    "pk": 123, 
-    "model": "runner.racer", 
+    "pk": 123,
+    "model": "runner.racer",
     "fields": {
-        "stamp": "2013-11-18T18:25:26.238", 
-        "person": 11, 
-        "name": "Mark's Third Car", 
+        "stamp": "2013-11-18T18:25:26.238",
+        "person": 11,
+        "name": "Mark's Third Car",
         "picture": ""
     }
 },
 {
-    "pk": 1, 
-    "model": "runner.group", 
+    "pk": 1,
+    "model": "runner.group",
     "fields": {
-        "stamp": "2013-11-18T20:30:23.557", 
+        "stamp": "2013-11-18T20:30:23.557",
         "racers": [
-            101, 
-            102, 
-            103, 
-            104, 
-            5, 
-            16, 
-            107, 
-            108, 
-            109, 
-            110, 
-            111, 
-            112, 
-            113, 
-            114, 
-            115, 
-            116, 
-            117, 
-            118, 
-            119, 
-            120, 
-            121, 
-            122, 
+            101,
+            102,
+            103,
+            104,
+            5,
+            16,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
             123
-        ], 
+        ],
         "name": "TEST - General heats"
     }
 },
 {
-    "pk": 2, 
-    "model": "runner.group", 
+    "pk": 2,
+    "model": "runner.group",
     "fields": {
-        "stamp": "2013-11-18T17:46:51.113", 
-        "racers": [], 
+        "stamp": "2013-11-18T17:46:51.113",
+        "racers": [],
         "name": "TEST - Finals"
     }
 },
 {
-    "pk": 1, 
-    "model": "runner.race", 
+    "pk": 1,
+    "model": "runner.race",
     "fields": {
-        "racer_group": 1, 
-        "name": "TEST - General heats race", 
-        "level": 1, 
-        "stamp": "2013-11-18T20:31:50.529", 
-        "derby_event": 1, 
+        "racer_group": 1,
+        "name": "TEST - General heats race",
+        "level": 1,
+        "stamp": "2013-11-18T20:31:50.529",
+        "derby_event": 1,
         "lane_ct": 6
     }
 }
