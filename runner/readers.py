@@ -22,9 +22,9 @@ def laneTimes(result_string):
     # {0: '2013-11-25 12:49:30.753042:', 1: 1.831, 2: 2.053, 3: 2.158, 4: 2.258, 5: 2.366, 6: 2.511}
 
     # result_string=2015-01-13 21:31:35.431482:4.41579693732=5.3072100027=5.66516712721=3.13101328584=5.6069078248=4.39635514875
-
     log.debug('result_string={}'.format(result_string))
-    lane_times = result_string.translate(None, '!"#$%&\'(ABCDEF').split('=')
+    table = str.maketrans(dict.fromkeys('!"#$%&\'(ABCDEF'))
+    lane_times = result_string.translate(table).split('=')
 
     result = dict(zip(range(lanes + 2), lane_times))
 
@@ -63,7 +63,7 @@ class MockFastTrackResultReader(threading.Thread):
                  resetCallback=resetCBprint,
                  resultsCallback=resultsCBprint):
         log.debug('ENTER MockFastTrackResultReader::__init__')
-        super(MockFastTrackResultReader, self).__init__()
+        super().__init__()
         self.daemon = True
         self.stopEvent = stopEvent
         self.trackSettings = trackSettings
@@ -78,8 +78,10 @@ class MockFastTrackResultReader(threading.Thread):
 
     def getMockResult(self):
         log.info('ENTER getMockResult')
-        time.sleep(2)
-        results = [round(random.uniform(3, 7), 3) for _ in range(6)]
+        if random.choice([True, False]):
+            results = [round(random.uniform(9, 10), 3) for _ in range(6)]
+        else:
+            results = [round(random.uniform(1, 7), 3) for _ in range(6)]
         result = '=' + '='.join(map(str, results))
         log.debug('[MOCK] Result={}'.format(result))
         log.info('EXIT getMockResult')
@@ -105,7 +107,6 @@ class FastTrackResultReader(threading.Thread):
         Version string is [P2 VERSION 1.6 ]'''
     SERIAL_DEVICE = '/dev/ttyUSB0'
     TIMEOUT = 1  # seconds, set small so we can check the stopEvent periodically
-    INDICATOR_KEY = 0x04  # 0x01=scroll-lock  0x02=numlock  0x04=capslock
     trackSettings = {}  # for now, just lane_ct : n
     stopEvent = None
     resetCallback = None
@@ -118,7 +119,7 @@ class FastTrackResultReader(threading.Thread):
                  trackSettings={'lane_ct': lanes},
                  resetCallback=resetCBprint,
                  resultsCallback=resultsCBprint):
-        super(FastTrackResultReader, self).__init__()
+        super().__init__()
         self.daemon = True
         self.stopEvent = stopEvent
         self.trackSettings = trackSettings
@@ -133,16 +134,6 @@ class FastTrackResultReader(threading.Thread):
         log.info('Stopping....')
 
     def run(self):
-        KDSETLED = 0x4B32
-
-        lastKeycode = 0x00
-        console_fd = None
-        try:
-            console_fd = os.open('/dev/console', os.O_NOCTTY)  # for heartbeat - capslock key
-        except:
-            print('heartbeat blinky disabled (likely permissions)')
-            log.warning('Unable to open console for heartbeat blinky')
-
         log.info('Connecting to track at {}.'.format(self.SERIAL_DEVICE))
         with serial.Serial(port=self.SERIAL_DEVICE, baudrate=9600, parity=serial.PARITY_NONE,
                            stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=self.TIMEOUT) as ser:
@@ -153,10 +144,16 @@ class FastTrackResultReader(threading.Thread):
 
             currentResult = []
 
+            log.warning('Check ser.read call, below for python3 correctness')
+
             while not self.stopEvent.is_set():
                 for c in ser.read():
+
+                # TODO: Test this with FastTrack in 2019 or read from a mock.
                 #for cc in ser.read():
                 #    c = cc.decode()
+                # or maybe:
+                #for c in chr(ser.read()):
                     sys.stdout.write(c)
                     if '\r' == c:
                         continue
@@ -181,16 +178,7 @@ class FastTrackResultReader(threading.Thread):
                             self.resultsCallback(lastResult)
                         currentResult = []
 
-                # Heartbeat
-                if console_fd is not None:
-                    try:
-                        fcntl.ioctl(console_fd, KDSETLED, self.INDICATOR_KEY - lastKeycode)
-                        lastKeycode = self.INDICATOR_KEY - lastKeycode
-                    except:
-                        console_fd = None
-                        print('heartbeat blinky disabled (likely permissions)')
-                        log.warning('Unable to write to console for heartbeat blinky')
-            ser.close()
+            ser.close() # TODO: Likely redundant since we're in a with block
 
 
 # str = 'A=1.234! B=2.345 C=3.456 D=4.567 E=0.000 F=0.000'
@@ -213,6 +201,5 @@ print('Trace listener started.  Sleeping for {}'.format(secs))
 time.sleep(secs)
 print('Done sleeping')
 stopEvent.set()
-
 
 '''

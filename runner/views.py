@@ -19,8 +19,7 @@ lastTrackResult = None
 
 
 def isControl(request):
-    return request.user.is_authenticated() and request.user.is_superuser
-    # FIXME/DJANGO3: request.user.is_authenticated() becomes a property (remove parens)
+    return request.user.is_authenticated and request.user.is_superuser
 
 
 def isNotControl(request):
@@ -30,7 +29,7 @@ def isNotControl(request):
 
 def _get_last_update():
     ''' Gets Current.stamp from the database.  Usually.  We have this value
-    cached for performance, but ttl is very short. This is just a defense 
+    cached for performance, but ttl is very short. This is just a defense
     against people rapidly refreshing their browser. '''
     key = 'last_race_update'
     ttl = 5  # This needs to stay short
@@ -64,7 +63,7 @@ def seedRace(request, race_id):
 
 
 def overhead(request, race_id, view):
-    ''' Django view: 
+    ''' Django view:
             race_id is 'current' or a Race.id.
             view is 'status' or 'standings'
         Note the data all comes from:
@@ -95,7 +94,7 @@ def overhead(request, race_id, view):
                    'view': view
                    }
 
-    if view != 'standings' and view != 'status':
+    if view not in ('standings', 'status'):
         raise Http404
 
     return render(request, 'overhead.html', context)
@@ -321,11 +320,11 @@ def getRunResult(request, race_id, timeout_secs):
     settings = {
         'lane_ct': 6}  # HACK: Hardcoding lane count, as races with < 6 racers will have this forced down, which will break result reading.
 
-    r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+    # r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
 
-    #     log.warning('views.py: !!!!! Using Mock reader !!!!!')
-    #     log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
-    #     r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+    log.warning('views.py: !!!!! Using Mock reader !!!!!')
+    log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
+    r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
     #     log.info('test')
     #     log.debug('r={}'.format(r))
 

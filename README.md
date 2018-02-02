@@ -17,6 +17,16 @@
 
 * some restrictions/limitations apply
 
+### System Requirements
+- Python 3
+- Django 2.0
+- Server requires the following ports to be open:
+  - Port 80 or 8080, set in {derby}/tornado/tornado-main.py
+
+Start the server by running {derby}/tornado-server.sh
+
+
+
 ### Pictures from past events
 TODO: Find/add pics from 2017 & 2018
 [Pack 180 2016](https://www.flickr.com/photos/joneser005/albums/72157663329671880) <br>
