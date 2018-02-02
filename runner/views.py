@@ -94,7 +94,7 @@ def overhead(request, race_id, view):
                    'view': view
                    }
 
-    if view != 'standings' and view != 'status':
+    if view not in ('standings', 'status'):
         raise Http404
 
     return render(request, 'overhead.html', context)
@@ -320,11 +320,11 @@ def getRunResult(request, race_id, timeout_secs):
     settings = {
         'lane_ct': 6}  # HACK: Hardcoding lane count, as races with < 6 racers will have this forced down, which will break result reading.
 
-    r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+    # r = readers.FastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
 
-    #     log.warning('views.py: !!!!! Using Mock reader !!!!!')
-    #     log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
-    #     r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
+    log.warning('views.py: !!!!! Using Mock reader !!!!!')
+    log.debug('About to call r = readers.MockFastTrackResultReader({}, {}, {}, {})'.format(stopEvent, settings, resetCB, resultsCB))
+    r = readers.MockFastTrackResultReader(stopEvent, settings, resetCB, resultsCB)
     #     log.info('test')
     #     log.debug('r={}'.format(r))
 
