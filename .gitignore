@@ -6,7 +6,7 @@ from-camera/**
 *swp
 log/
 media/
-hosted-static/
 !derbysite/media/racers/default-image.png
+hosted-static/
 .directory
 derby.db
