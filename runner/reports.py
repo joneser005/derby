@@ -231,7 +231,7 @@ from runner_runplace rp
 join runner_run run on (run.id = rp.run_id)
 left join runner_runplace other_rps on (rp.run_id = other_rps.run_id and rp.id != other_rps.id
     and other_rps.seconds < rp.seconds and other_rps.dnf = 0)
-where run.race_id = %s 
+where run.race_id = %s
 group by rp.racer_id, run.run_seq, rp.lane, rp.seconds
 order by rp.racer_id, rp.lane ''', [race.id])
 
@@ -277,7 +277,7 @@ left outer join (    select rp.racer_id, p.rank, avg(rp.seconds) as avg_seconds
     join runner_racer racer on racer.id = rp.racer_id
     join runner_person p on p.id = racer.person_id
     where run.race_id = %s
-    group by racer_id, p.rank) as a2 
+    group by racer_id, p.rank) as a2
 where a2.avg_seconds <= a1.avg_seconds
 {}
 group by a1.racer_id, a1.rank, a1.avg_seconds
@@ -296,7 +296,7 @@ order by place '''.format('and a1.rank = a2.rank' if by_rank else ' '), [race_id
         cur = connections['default'].cursor()
         cur.execute(''' select max(rp.seconds) as slowest_time, min(rp.seconds) as fastest_time, avg(rp.seconds) as avg_time
 from runner_race race
-join runner_run run on race.id = run.race_id 
+join runner_run run on race.id = run.race_id
 join runner_runplace rp on run.id = rp.run_id
 where race.id = %s and rp.seconds > 0 ''', [race.id])
 
@@ -314,15 +314,15 @@ where race.id = %s and rp.seconds > 0 ''', [race.id])
         result = {'name': racer.name, 'person.name_last': racer.person.name_last,
                   'person.name_first': racer.person.name_first, 'person.rank': racer.person.rank}
         #         result['picture'] = racer.picture
-        #         result['picture.html'] = racer.image_tag_20
+        #         result['picture.html'] = racer.image_tag
         #         result['person.picture'] = racer.person.picture
 
         cur = connections['default'].cursor()
         cur.execute(''' select max(rp.seconds) as slowest_time, min(rp.seconds) as fastest_time, avg(rp.seconds) as avg_time
 from runner_race race
-join runner_run run on race.id = run.race_id 
+join runner_run run on race.id = run.race_id
 join runner_runplace rp on run.id = rp.run_id
-where race.id = %s and rp.seconds > 0 
+where race.id = %s and rp.seconds > 0
   and rp.racer_id = %s ''', [race.id, racer.id])
 
         for row in cur.fetchall():

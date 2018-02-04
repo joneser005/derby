@@ -1,3 +1,9 @@
+import os
+import shutil
+from PIL import Image
+#os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
+
+from django.conf import settings
 from django.contrib import admin
 import logging
 from django import forms
@@ -6,7 +12,6 @@ import runner.models as models
 # import name_generator
 
 log = logging.getLogger('admin')
-
 
 # name_generator.load()
 
@@ -23,12 +28,11 @@ class PersonAdmin(admin.ModelAdmin):
 
 
 class RacerAdminForm(forms.ModelForm):
+
     def clean(self):
-        cleaned_data = super(RacerAdminForm, self).clean()
-        log.debug('cleaned_data={}'.format(cleaned_data))
+        cleaned_data = super().clean()
         name = cleaned_data.get("name")
         choice = cleaned_data.get("name_choice")
-
         if name is None or 0 == len(name):
             cleaned_data['name'] = choice
 
@@ -42,20 +46,63 @@ class RacerAdminForm(forms.ModelForm):
 
 class RacerAdmin(admin.ModelAdmin):
     form = RacerAdminForm
-    fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag_20']
-    list_display = ['id', 'person', 'rank', 'name', 'image_tag_20']
-    list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_20']
-    list_filter = ('person__rank', 'person__pack',)
-    readonly_fields = ('id', 'rank', 'image_tag_20',)
+    fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag']
+    list_display = ['id', 'person', 'rank', 'name', 'image_tag_thumb']
+    list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_thumb']
+    list_filter = ['person__rank', 'person__pack',]
+    readonly_fields = ['id', 'rank', 'image_tag']
 
     def rank(self, obj):
         return obj.person.rank
 
     def save_model(self, request, obj, form, change):
-        log.debug('Entered save_model')
+        log.debug('ENTER save_model')
         log.debug('form.cleaned_data={}'.format(form.cleaned_data))
         #         obj.name = form.cleaned_data['name_ideas'] if obj.name == None else form.cleaned_data['name']
+        # This call saves the image to the filesystem.  obj is models.Racer
         obj.save()
+        self.resize_racer_image(obj)
+        log.debug('EXITED save_model')
+
+    def resize_racer_image(self, racer):
+        log.debug('ENTER resize_racer_image')
+        log.debug(f'racer.picture={racer.picture}')
+        pic = os.path.join(settings.MEDIA_ROOT, str(racer.picture))
+        log.debug(f'Image path={pic}')
+        # racer.picture=racers/141_4139-copy.JPG
+
+        # Copy file to fname-ORIG.ext
+        parts = os.path.splitext(pic)
+        orig_pic = ''.join([parts[0], '-ORIG', parts[1]])
+        shutil.copyfile(pic, orig_pic)
+
+        # Resize+reorient pic
+        MAXH = 200
+        img = Image.open(pic)
+        w,h = img.size
+        ratio = float(w) / float(h)
+        if ratio > 1:
+            # HACK: -90 vs. 90 is an artibrary choice based on observed
+            # iPhone behavior: when the phone is tilted forwards to get
+            # a birds-eye view, the camera, for whatever reason, assumes
+            # this means you now want a landscape-oriented image.  The
+            # stock camera in my Moto4G android makes no change to orientation
+            # (which is more correct, IMHO).  This code ensures the final
+            # image is always shown in portrait orientation, hopefully with the
+            # front of the car pointing down.
+            img = img.rotate(-90, expand=1)
+            log.debug('Rotated image')
+        thumbsize = (MAXH, int(MAXH * ratio))
+        img.thumbnail(thumbsize)
+        img.save(pic)
+
+        log.debug('EXIT resize_racer_image')
+        return
+
+    class Media:
+        css = {
+            'all': ('css/derbyadmin.css',)
+        }
 
 
 class RacerNameAdmin(admin.ModelAdmin):

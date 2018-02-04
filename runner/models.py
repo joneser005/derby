@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 from django.utils.html import format_html
 from django.db import models
 
@@ -51,31 +52,39 @@ class RacerName(models.Model):
 class Racer(models.Model):
     ''' e.g. Car or Rocket '''
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200, unique=True, blank=True, null=True)  # e.g. "Red Rider"
+    name = models.CharField(max_length=200, unique=True, blank=True, null=True)
     name_choice = models.ForeignKey(RacerName, blank=True, null=True, on_delete=models.SET_NULL,
-                                    verbose_name="name suggestions or specify below")  # HACK: Used to display a small random set of suggested racer names
+                                    verbose_name="name suggestions or specify below")
     picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)
 
-    def image_tag_100(self):
-        return format_html('<img src="{0}" alt="{1}"/>'.format('x', 'y'))
+    def image_tag_orig(self):
+        img = self.picture if self.picture else ''
+        parts = os.path.splitext(img)
+        orig_fname = parts[0] + '-ORIG' + parts[1]
+        return format_html('<img src="{0} alt="{1}"/>'.format(orig_fname, self.name))
 
-    def image_tag_20(self):
-        if self.picture is None:
-            img = ''
-        else:
-            img = self.picture
-        return '<img src="{0}" height="200px" alt="{1}"/>'.format(img.url, img.url)
+    def image_tag(self):
+        img = self.picture if self.picture else ''
+        return format_html('<img src="{0}" height="200px"/>'.format(img.url))
+
+    def image_tag_thumb(self):
+        img = self.picture if self.picture else ''
+        return format_html('<img src="{0}" height="80px" class="rotate90"/>'.format(img.url))
 
     def __str__(self):
         return '#' + str(self.id) + ' - ' + ('* no name given *' if self.name is None else self.name) + \
                ' (' + self.person.name_first + ' ' + self.person.name_last + ' : ' + self.person.rank + ')'
 
+    image_tag.short_description = ''  # this variable intentionally left blank to avoid a redundant label on the form
+    image_tag.allow_tags = True
+    image_tag_thumb.short_description = 'Racer image'
+    image_tag_thumb.allow_tags = True
+    image_tag_orig.short_description = 'Racer image'
+    image_tag_orig.allow_tags = True
+
     class Meta:
         ordering = ["pk"]
-
-    image_tag_100.allow_tags = True
-    image_tag_20.allow_tags = True
 
 
 class Group(models.Model):

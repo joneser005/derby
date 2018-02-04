@@ -199,8 +199,8 @@ tr.status-heading {
 .ui-progressbar.done .ui-progressbar-value { background: green; }
 .ui-progressbar.not-done .ui-progressbar-value { background: #FF6600; }
 
-.ui-tabs-selected { 
-	background: #FF6600;
+.ui-tabs-selected {
+    background: #FF6600;
     font-weight: bold;
     color:#EEEEEE;
     text-shadow: 1px 1px 0 #222222;
