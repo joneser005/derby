@@ -10,3 +10,5 @@ media/
 hosted-static/
 .directory
 derby.db
+.ipynb_checkpoints/
+.idea/
