@@ -1,3 +1,4 @@
 /static-files/js/jquery* linguist-vendored
 /static-files/css/blitzer linguist-vendored
+/results linguist-vendored
 
