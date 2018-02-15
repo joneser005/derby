@@ -1,12 +1,12 @@
 import datetime
 import logging
 import os
+import random
+import time
 from django.utils.html import format_html
 from django.db import models
 
 import runner.singleton_model
-
-# from django.template.defaultfilters import default
 
 log = logging.getLogger('runner')
 
@@ -48,12 +48,22 @@ class RacerName(models.Model):
     def __str__(self):
         return self.name
 
+# FIXME/SOMEDAY/ISSUE #30: Rewrite this to be a http get, populate on demand, so we guarantee always-unique values w/respect to what names are in-use at the time.
+def get_name_choices(n=5):
+    random.seed(int(round(time.time() * 1000)))
+    choices = random.sample(list(RacerName.objects.all()), n)
+    return [x.id for x in choices]
+
 
 class Racer(models.Model):
     ''' e.g. Car or Rocket '''
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, unique=True, blank=True, null=True)
+
+    # FIXME/SOMEDAY/ISSUE #30: get_name_choices() is called once, at startup, due to how Python implements class fields.
+    # FIXME/SOMEDAY/ISSUE #30: Change the filter to query Racer and RacerName, or use a different approach (see farther above)
     name_choice = models.ForeignKey(RacerName, blank=True, null=True, on_delete=models.SET_NULL,
+                                    limit_choices_to={'id__in': get_name_choices()},
                                     verbose_name="name suggestions or specify below")
     picture = models.ImageField(upload_to='racers', blank=True, null=True, default='racers/default-image.png')
     stamp = models.DateTimeField(auto_now=True)

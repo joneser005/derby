@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 from PIL import Image
 #os.environ.setdefault("DJANGO_SETTINGS_MODULE", "derbysite.settings")
@@ -29,9 +30,25 @@ class PersonAdmin(admin.ModelAdmin):
 
 class RacerAdminForm(forms.ModelForm):
 
+    # FIXME/SOMEDAY/ISSUE #30: Leaving this here for future research.....
+
+    # FIXME/SOMEDAY/ISSUE #30: Original method, populates list with everything (too many)
+    # name_choice = models.ForeignKey(RacerName, blank=True, null=True, on_delete=models.SET_NULL,
+    #                                 verbose_name="name suggestions or specify below")
+
+    # FIXME/SOMEDAY/ISSUE #30: Attempt to pull 5 random choices.
+    # choices = random.sample(list(RacerName.objects.all()), 5)
+    # choices = list(zip(choices, choices))
+    # log.debug('&&&&& CHOICES=' + str(len(choices)) + ':' + str(type(choices))) # + ':' + choices[0])
+    # name_choice = models.CharField(max_length=200, choices=choices)
+    #         blank=True, null=True, on_delete=models.SET_NULL,
+    #         verbose_name="name suggestions or specify below")
+
     def clean(self):
         cleaned_data = super().clean()
         name = cleaned_data.get("name")
+
+        # Revisit the need for this code if/when ISSUE #30 is worked on/completed:
         choice = cleaned_data.get("name_choice")
         if name is None or 0 == len(name):
             cleaned_data['name'] = choice
@@ -46,7 +63,9 @@ class RacerAdminForm(forms.ModelForm):
 
 class RacerAdmin(admin.ModelAdmin):
     form = RacerAdminForm
-    fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag']
+    fields = ['id', 'person', 'rank', 'name', 'picture', 'image_tag']
+    # FIXME/SOMEDAY/ISSUE #30: Add 'name_choice' to show on admin form:
+    # fields = ['id', 'person', 'rank', 'name_choice', 'name', 'picture', 'image_tag']
     list_display = ['id', 'person', 'rank', 'name', 'image_tag_thumb']
     list_display_links = ['id', 'person', 'rank', 'name', 'image_tag_thumb']
     list_filter = ['person__rank', 'person__pack',]
@@ -55,23 +74,31 @@ class RacerAdmin(admin.ModelAdmin):
     def rank(self, obj):
         return obj.person.rank
 
+    # FIXME/SOMEDAY/ISSUE #30: Part of another attempt on limiting name choices in the admin form.
+    # def name_choice(self, obj):
+        # return random.sample(obj.name_choice, k=5)
+
     def save_model(self, request, obj, form, change):
         log.debug('ENTER save_model')
-        log.debug('form.cleaned_data={}'.format(form.cleaned_data))
-        #         obj.name = form.cleaned_data['name_ideas'] if obj.name == None else form.cleaned_data['name']
         # This call saves the image to the filesystem.  obj is models.Racer
         obj.save()
         self.resize_racer_image(obj)
         log.debug('EXITED save_model')
 
     def resize_racer_image(self, racer):
+        '''
+        Downsize and rotate the racer image.  Result will be in portrait mode of modest dimensions.
+        Note there is also a pair of bash scripts I was using to auto-crop around the cars and scale down, too.
+        I don't think I ever used it in production.  Mentioning here because the output of that process was a narrower
+        image that was better suited for the html per-lane display rendering.  The code below works well enough, at
+        least for now.
+        '''
         log.debug('ENTER resize_racer_image')
         log.debug(f'racer.picture={racer.picture}')
         pic = os.path.join(settings.MEDIA_ROOT, str(racer.picture))
         log.debug(f'Image path={pic}')
-        # racer.picture=racers/141_4139-copy.JPG
 
-        # Copy file to fname-ORIG.ext
+        # Copy file to fname-ORIG.ext.  This isn't used at this writing, but may be handy if we want larger images later.
         parts = os.path.splitext(pic)
         orig_pic = ''.join([parts[0], '-ORIG', parts[1]])
         shutil.copyfile(pic, orig_pic)
